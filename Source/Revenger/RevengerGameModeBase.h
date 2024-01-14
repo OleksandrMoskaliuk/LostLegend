@@ -12,6 +12,6 @@
 UCLASS()
 class REVENGER_API ARevengerGameModeBase : public AGameModeBase
 {
-	GENERATED_BODY()
-	
+  GENERATED_BODY()
+
 };
