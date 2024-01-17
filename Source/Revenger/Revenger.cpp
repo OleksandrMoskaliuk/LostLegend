@@ -3,4 +3,6 @@
 #include "Revenger.h"
 #include "Modules/ModuleManager.h"
 
-IMPLEMENT_PRIMARY_GAME_MODULE( FDefaultGameModuleImpl, Revenger, "Revenger" );
+IMPLEMENT_PRIMARY_GAME_MODULE(FDefaultGameModuleImpl, Revenger, "Revenger");
+
+DEFINE_LOG_CATEGORY(LogTopDownCppImport)

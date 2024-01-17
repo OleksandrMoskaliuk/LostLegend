@@ -7,11 +7,11 @@
 #include "RevengerGameModeBase.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
-class REVENGER_API ARevengerGameModeBase : public AGameModeBase
-{
-  GENERATED_BODY()
-
+class REVENGER_API ARevengerGameModeBase : public AGameModeBase {
+    GENERATED_BODY()
+public:
+    ARevengerGameModeBase();
 };
