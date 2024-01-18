@@ -115,7 +115,7 @@ void ARevengerPlayerController::OnSetDestinationTriggered()
 void ARevengerPlayerController::OnSetDestinationReleased()
 {
     // If it was a short press
-    GEngine->AddOnScreenDebugMessage(0, 1.2f, FColor::Red, "Released");
+    //GEngine->AddOnScreenDebugMessage(0, 1.2f, FColor::Red, "Released");
     if (FollowTime <= ShortPressThreshold) {
         // WSimpleMoveToLocation is a part of NavigationSystem it will not work untill NavMeshBoundsVolume will be added to map
         // After adding press press 'P' button to check walkable ground
@@ -126,5 +126,4 @@ void ARevengerPlayerController::OnSetDestinationReleased()
             FVector(1.f, 1.f, 1.f), true, true, ENCPoolMethod::None, true);
     }
     FollowTime = 0.f;
-    GEngine->AddOnScreenDebugMessage(-2, 1.2f, FColor::Magenta, FString::SanitizeFloat(this->FollowTime));
 }
