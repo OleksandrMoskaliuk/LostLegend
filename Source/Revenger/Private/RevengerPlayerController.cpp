@@ -180,19 +180,24 @@ bool ARevengerPlayerController::CanMoveNextGoal()
 void ARevengerPlayerController::RotateToGoal(const FVector& GoalLocation, float DeltaTime)
 {
     APawn* ControlledPawn = GetPawn();
-    // Turn off rotation if goal is close
-    float CurrentDistance = FVector::DistXY(GoalLocation, ControlledPawn->GetActorLocation());
-    GEngine->AddOnScreenDebugMessage(8, 2.f, FColor::Red, "Distance to goal = " + FString::SanitizeFloat(CurrentDistance));
-    float TurnOffRotationWhenCloseToGoal = 50;
-    if (CurrentDistance < TurnOffRotationWhenCloseToGoal) {
-        ARevengerCharacter* PlayerCharacter = Cast<ARevengerCharacter>(ControlledPawn);
-        if (PlayerCharacter != nullptr) {
-            PlayerCharacter->TurnLeft = false;
-            PlayerCharacter->TurnRight = false;
-        }
-        return;
+    ARevengerCharacter* PlayerCharacter = Cast<ARevengerCharacter>(ControlledPawn);
+    float DistanceToGoal = 0.f;
+    float AllowedDistance;
+    float PlayerSpeed = 0.f;
+   
+    if (ControlledPawn) 
+    {
+        DistanceToGoal = FVector::DistXY(GoalLocation, ControlledPawn->GetActorLocation());
+        UPawnMovementComponent* MoveComponent = ControlledPawn->GetMovementComponent();
+        PlayerSpeed = MoveComponent->Velocity.Size();
     }
-    if (ControlledPawn != nullptr) {
+    if (true) 
+    {
+        GEngine->AddOnScreenDebugMessage(8, 2.f, FColor::Red, "Distance to goal = " + FString::SanitizeFloat(DistanceToGoal));
+        GEngine->AddOnScreenDebugMessage(10, 2.f, FColor::Blue, "Speed = " + FString::SanitizeFloat(PlayerSpeed));
+    }
+    // Lambda for precise Pawn rotation
+    auto PreciseRotate = [&](float AcceptableRotationThreashold = 30) {
         // FIND CLOSEST ROTATION TO GOAL
         // Get the current location of the character
         FVector CurrentLocation = ControlledPawn->GetActorLocation();
@@ -210,50 +215,105 @@ void ARevengerPlayerController::RotateToGoal(const FVector& GoalLocation, float 
         float AngleToGoal = FMath::RadiansToDegrees(FMath::Acos(FVector::DotProduct(ForwardVector, DirectionToGoal)));
 
         // Check if the rotation is close enough to the goal
-        float AcceptableRotationError = 20.f; // degrees
-        if (FMath::Abs(AngleToGoal) > AcceptableRotationError) {
+        if (FMath::Abs(AngleToGoal) > AcceptableRotationThreashold) {
             // Determine if the rotation is towards the left or right
             FVector CrossProduct = FVector::CrossProduct(ForwardVector, DirectionToGoal);
             float Sign = FMath::Sign(CrossProduct.Z);
-            FString RotationDirection = (Sign > 0) ? TEXT("Right") : TEXT("Left");
             // Root motion rotation relative
-            ARevengerCharacter* PlayerCharacter = Cast<ARevengerCharacter>(ControlledPawn);
             UPawnMovementComponent* MoveComponent = ControlledPawn->GetMovementComponent();
             float PlayerSpeed = MoveComponent->Velocity.Size();
-            GEngine->AddOnScreenDebugMessage(10, 2.f, FColor::Blue, "Speed = " + FString::SanitizeFloat(PlayerSpeed));
             float MovingRotationSpeed = 40;
-            if (PlayerCharacter != nullptr && PlayerSpeed <= 0) {
-                // turn right
-                if (Sign > 0) {
-                    PlayerCharacter->TurnRight = true;
-                    // turn left
-                } else if (Sign < 0) {
-                    PlayerCharacter->TurnLeft = true;
-                }
-                // If player running just simple pawn rotation
-            } else {
-                if (PlayerCharacter != nullptr) {
-                    MovingRotationSpeed = PlayerCharacter->MovingRotationSpeed;
-                }
-                if (Sign > 0) {
-                    FQuat Rotattion = FQuat(FRotator(0, MovingRotationSpeed * DeltaTime, 0));
-                    ControlledPawn->AddActorLocalRotation(Rotattion, false, 0);
-                } else if (Sign < 0) {
-                    FQuat Rotattion = FQuat(FRotator(0, -MovingRotationSpeed * DeltaTime, 0));
-                    ControlledPawn->AddActorLocalRotation(Rotattion, false, 0);
-                }
-            }
-            // Log the angle and rotation direction
-            UE_LOG(LogTemp, Warning, TEXT("Angle to Goal: %f degrees, Rotation Direction: %s"), AngleToGoal, *RotationDirection);
-        } else {
-            // Log that the rotation is within the acceptable error
-            UE_LOG(LogTemp, Warning, TEXT("Rotation within acceptable error. Skipping rotation."));
-            ARevengerCharacter* PlayerCharacter = Cast<ARevengerCharacter>(ControlledPawn);
-            // Update turn variables
             if (PlayerCharacter != nullptr) {
+                MovingRotationSpeed = PlayerCharacter->MovingRotationSpeed;
+            }
+            if (Sign > 0) {
+                FQuat Rotattion = FQuat(FRotator(0, MovingRotationSpeed * DeltaTime, 0));
+                ControlledPawn->AddActorLocalRotation(Rotattion, false, 0);
+            } else if (Sign < 0) {
+                FQuat Rotattion = FQuat(FRotator(0, -MovingRotationSpeed * DeltaTime, 0));
+                ControlledPawn->AddActorLocalRotation(Rotattion, false, 0);
+            }
+        }
+        if (PlayerCharacter != nullptr) {
+            PlayerCharacter->TurnLeft = false;
+            PlayerCharacter->TurnRight = false;
+        }
+    };
+
+    // Rotation using root motion
+    auto RootMotionRotation = [&](float AcceptableRotationThreashold = 60) {
+        if (ControlledPawn != nullptr) {
+            // FIND CLOSEST ROTATION TO GOAL
+            // Get the current location of the character
+            FVector CurrentLocation = ControlledPawn->GetActorLocation();
+
+            // DrawDebugSphere(GetWorld(), CurrentLocation, 30.f, 10, FColor::Yellow, false, 5.f);
+
+            // Calculate the direction vector to the goal
+            FVector DirectionToGoal = GoalLocation - CurrentLocation;
+            DirectionToGoal.Normalize();
+
+            // Get the forward vector of the character
+            FVector ForwardVector = ControlledPawn->GetActorForwardVector();
+
+            // Calculate the angle between the current forward vector and the direction to the goal
+            float AngleToGoal = FMath::RadiansToDegrees(FMath::Acos(FVector::DotProduct(ForwardVector, DirectionToGoal)));
+
+            // Check if the rotation is close enough to the goal
+            if (FMath::Abs(AngleToGoal) > AcceptableRotationThreashold) {
+                // Determine if the rotation is towards the left or right
+                FVector CrossProduct = FVector::CrossProduct(ForwardVector, DirectionToGoal);
+                float Sign = FMath::Sign(CrossProduct.Z);
+                FString RotationDirection = (Sign > 0) ? TEXT("Right") : TEXT("Left");
+                // Root motion rotation relative
+                if (PlayerCharacter != nullptr && PlayerSpeed <= 0) {
+                    // turn right
+                    if (Sign > 0) {
+                        PlayerCharacter->TurnRight = true;
+                    // turn left
+                    } else if (Sign < 0) {
+                        PlayerCharacter->TurnLeft = true;
+                    }
+                }
+            } else if (PlayerCharacter != nullptr) {
+                // Update turn variables
                 PlayerCharacter->TurnLeft = false;
                 PlayerCharacter->TurnRight = false;
             }
         }
+    };
+
+    // When player moving , use only precise rotation
+    if (PlayerSpeed > 100.f) 
+    {
+        PreciseRotate(10);
+        return;
     }
+
+    // Goal is close to player
+    // Turn off root motion rotation if goal is close
+    AllowedDistance = 50;
+    if (DistanceToGoal <= AllowedDistance) {
+        if (PlayerCharacter != nullptr) {
+         // Update turn variables
+         PlayerCharacter->TurnLeft = false;
+         PlayerCharacter->TurnRight = false;
+        }
+        return;
+    }
+
+    // Goal is near to player, use root motion
+    AllowedDistance = 200;
+    if (DistanceToGoal <= AllowedDistance) {
+        RootMotionRotation(60);
+        return;
+    }
+
+    // Goal is far from player, use root motion
+    AllowedDistance = 200;
+    if (DistanceToGoal >= AllowedDistance) {
+        RootMotionRotation(30);
+        return;
+    }
+
 }
