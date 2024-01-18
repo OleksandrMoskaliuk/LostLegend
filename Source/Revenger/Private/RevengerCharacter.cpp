@@ -57,6 +57,12 @@ ARevengerCharacter::ARevengerCharacter()
     // Activate ticking in order to update the cursor every frame.
     PrimaryActorTick.bCanEverTick = true;
     PrimaryActorTick.bStartWithTickEnabled = true;
+    // Movement
+    GroundSpeed = 0.f;
+    TurnLeft = false;
+    TurnRight = false;
+    MovingRotationSpeed = 50;
+    CharacterState = ECharacterState::IDLE;
 }
 
 // Called when the game starts or when spawned

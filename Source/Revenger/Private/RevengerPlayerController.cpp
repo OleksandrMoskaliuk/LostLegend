@@ -12,6 +12,12 @@
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "RevengerCharacter.h"
+// vectors calculation
+#include "Kismet/KismetMathLibrary.h"
+// Find path
+#include "GameFramework/PawnMovementComponent.h"
+#include "NavigationPath.h"
+#include "NavigationSystem.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -38,13 +44,17 @@ void ARevengerPlayerController::BeginPlay()
 
 void ARevengerPlayerController::Tick(float DeltaTime)
 {
-    /*APawn* ControlledPawn = GetPawn();
-    if (ControlledPawn != nullptr && bNewGoal) {
-      ControlledPawn->AddMovementInput(CachedDestination, 1.0, false);
+    RotateToGoal(CachedDestination, DeltaTime * 2.f);
+}
+
+FVector ARevengerPlayerController::GetDesiredVelocity()
+{
+    if (this->CachedDestination != FVector()) {
+        FVector PlayerLocation = GetPawn()->GetActorLocation();
+        FVector DesiredVelocity = UKismetMathLibrary::GetDirectionUnitVector(PlayerLocation, CachedDestination);
+        return DesiredVelocity;
     }
-    if (bNewGoal) {
-    UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, CachedDestination);
-        }*/
+    return FVector();
 }
 
 void ARevengerPlayerController::SetupInputComponent()
@@ -88,42 +98,162 @@ void ARevengerPlayerController::OnSetDestinationTriggered()
     // We flag that the input is being pressed
     FollowTime += GetWorld()->GetDeltaSeconds();
 
-    GEngine->AddOnScreenDebugMessage(-2, 1.2f, FColor::Magenta, FString::SanitizeFloat(FollowTime));
+    // GEngine->AddOnScreenDebugMessage(-2, 1.2f, FColor::Magenta, FString::SanitizeFloat(FollowTime));
 
     // We look for the location in the world where the player has pressed the
     // input
-    FHitResult Hit;
-    bool bHitSuccessful = false;
+    // FHitResult Hit;
+    // bool bHitSuccessful = false;
 
-    bHitSuccessful = GetHitResultUnderCursor(ECollisionChannel::ECC_Visibility, true, Hit);
+    // bHitSuccessful = GetHitResultUnderCursor(ECollisionChannel::ECC_Visibility, true, Hit);
 
-    // If we hit a surface, cache the location
-    if (bHitSuccessful) {
-        CachedDestination = Hit.Location;
-        bNewGoal = true;
-    }
-
-    // Move towards mouse pointer or touch
-    APawn* ControlledPawn = GetPawn();
-    if (ControlledPawn != nullptr) {
-        FVector WorldDirection = (CachedDestination - ControlledPawn->GetActorLocation())
-                                     .GetSafeNormal();
-        ControlledPawn->AddMovementInput(WorldDirection, 1.0, false);
-    }
+    //// If we hit a surface, cache the location
+    // if (bHitSuccessful) {
+    //     CachedDestination = Hit.Location;
+    //     bNewGoal = true;
+    //     // get navigation goals using navigation volume
+    //
+    // }
+    //
+    //// Move towards mouse pointer or touch
+    // APawn* ControlledPawn = GetPawn();
+    // if (ControlledPawn != nullptr && bHitSuccessful) {
+    //     FVector PlayerLocation = ControlledPawn->GetActorLocation();
+    //    UNavigationPath *Path =  UNavigationSystemV1::FindPathToActorSynchronously(this, CachedDestination, ControlledPawn);
+    //     for (FVector Ph : Path->PathPoints)
+    //     {
+    //        DrawDebugSphere(GetWorld(), Ph, 20.f, 10, FColor::Red);
+    //     }
+    //     FVector WorldDirection = (CachedDestination - ControlledPawn->GetActorLocation())
+    //                                  .GetSafeNormal();
+    //    // ControlledPawn->AddMovementInput(WorldDirection, 1.0, false);
+    // }
 }
 
 void ARevengerPlayerController::OnSetDestinationReleased()
 {
     // If it was a short press
-    //GEngine->AddOnScreenDebugMessage(0, 1.2f, FColor::Red, "Released");
+    // GEngine->AddOnScreenDebugMessage(0, 1.2f, FColor::Red, "Released");
     if (FollowTime <= ShortPressThreshold) {
         // WSimpleMoveToLocation is a part of NavigationSystem it will not work untill NavMeshBoundsVolume will be added to map
         // After adding press press 'P' button to check walkable ground
-        UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, CachedDestination);
+        // UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, CachedDestination);
+        //
+
+        FHitResult Hit;
+        bool bHitSuccessful = false;
+
+        bHitSuccessful = GetHitResultUnderCursor(ECollisionChannel::ECC_Visibility, true, Hit);
+
+        // If we hit a surface, cache the location
+        if (bHitSuccessful) {
+            CachedDestination = Hit.Location;
+            // get navigation goals using navigation volume
+        }
+
+        // Move towards mouse pointer or touch
+        APawn* ControlledPawn = GetPawn();
+        if (ControlledPawn != nullptr && bHitSuccessful) {
+            FVector PlayerLocation = ControlledPawn->GetActorLocation();
+            UNavigationPath* Path = UNavigationSystemV1::FindPathToActorSynchronously(this, CachedDestination, ControlledPawn, 10.f);
+            for (FVector Ph : Path->PathPoints) {
+                DrawDebugSphere(GetWorld(), Ph, 20.f, 10, FColor::Red, false, 5.f);
+            }
+            FVector WorldDirection = (CachedDestination - ControlledPawn->GetActorLocation())
+                                         .GetSafeNormal();
+            // ControlledPawn->AddMovementInput(WorldDirection, 1.0, false);
+        }
+
         // Spawn cursor effect
         UNiagaraFunctionLibrary::SpawnSystemAtLocation(
             this, FXCursor, CachedDestination, FRotator::ZeroRotator,
             FVector(1.f, 1.f, 1.f), true, true, ENCPoolMethod::None, true);
     }
     FollowTime = 0.f;
+}
+
+bool ARevengerPlayerController::CanMoveNextGoal()
+{
+    return false;
+}
+
+void ARevengerPlayerController::RotateToGoal(const FVector& GoalLocation, float DeltaTime)
+{
+    APawn* ControlledPawn = GetPawn();
+    // Turn off rotation if goal is close
+    float CurrentDistance = FVector::DistXY(GoalLocation, ControlledPawn->GetActorLocation());
+    GEngine->AddOnScreenDebugMessage(8, 2.f, FColor::Red, "Distance to goal = " + FString::SanitizeFloat(CurrentDistance));
+    float TurnOffRotationWhenCloseToGoal = 50;
+    if (CurrentDistance < TurnOffRotationWhenCloseToGoal) {
+        ARevengerCharacter* PlayerCharacter = Cast<ARevengerCharacter>(ControlledPawn);
+        if (PlayerCharacter != nullptr) {
+            PlayerCharacter->TurnLeft = false;
+            PlayerCharacter->TurnRight = false;
+        }
+        return;
+    }
+    if (ControlledPawn != nullptr) {
+        // FIND CLOSEST ROTATION TO GOAL
+        // Get the current location of the character
+        FVector CurrentLocation = ControlledPawn->GetActorLocation();
+
+        // DrawDebugSphere(GetWorld(), CurrentLocation, 30.f, 10, FColor::Yellow, false, 5.f);
+
+        // Calculate the direction vector to the goal
+        FVector DirectionToGoal = GoalLocation - CurrentLocation;
+        DirectionToGoal.Normalize();
+
+        // Get the forward vector of the character
+        FVector ForwardVector = ControlledPawn->GetActorForwardVector();
+
+        // Calculate the angle between the current forward vector and the direction to the goal
+        float AngleToGoal = FMath::RadiansToDegrees(FMath::Acos(FVector::DotProduct(ForwardVector, DirectionToGoal)));
+
+        // Check if the rotation is close enough to the goal
+        float AcceptableRotationError = 20.f; // degrees
+        if (FMath::Abs(AngleToGoal) > AcceptableRotationError) {
+            // Determine if the rotation is towards the left or right
+            FVector CrossProduct = FVector::CrossProduct(ForwardVector, DirectionToGoal);
+            float Sign = FMath::Sign(CrossProduct.Z);
+            FString RotationDirection = (Sign > 0) ? TEXT("Right") : TEXT("Left");
+            // Root motion rotation relative
+            ARevengerCharacter* PlayerCharacter = Cast<ARevengerCharacter>(ControlledPawn);
+            UPawnMovementComponent* MoveComponent = ControlledPawn->GetMovementComponent();
+            float PlayerSpeed = MoveComponent->Velocity.Size();
+            GEngine->AddOnScreenDebugMessage(10, 2.f, FColor::Blue, "Speed = " + FString::SanitizeFloat(PlayerSpeed));
+            float MovingRotationSpeed = 40;
+            if (PlayerCharacter != nullptr && PlayerSpeed <= 0) {
+                // turn right
+                if (Sign > 0) {
+                    PlayerCharacter->TurnRight = true;
+                    // turn left
+                } else if (Sign < 0) {
+                    PlayerCharacter->TurnLeft = true;
+                }
+                // If player running just simple pawn rotation
+            } else {
+                if (PlayerCharacter != nullptr) {
+                    MovingRotationSpeed = PlayerCharacter->MovingRotationSpeed;
+                }
+                if (Sign > 0) {
+                    FQuat Rotattion = FQuat(FRotator(0, MovingRotationSpeed * DeltaTime, 0));
+                    ControlledPawn->AddActorLocalRotation(Rotattion, false, 0);
+                } else if (Sign < 0) {
+                    FQuat Rotattion = FQuat(FRotator(0, -MovingRotationSpeed * DeltaTime, 0));
+                    ControlledPawn->AddActorLocalRotation(Rotattion, false, 0);
+                }
+            }
+            // Log the angle and rotation direction
+            UE_LOG(LogTemp, Warning, TEXT("Angle to Goal: %f degrees, Rotation Direction: %s"), AngleToGoal, *RotationDirection);
+        } else {
+            // Log that the rotation is within the acceptable error
+            UE_LOG(LogTemp, Warning, TEXT("Rotation within acceptable error. Skipping rotation."));
+            ARevengerCharacter* PlayerCharacter = Cast<ARevengerCharacter>(ControlledPawn);
+            // Update turn variables
+            if (PlayerCharacter != nullptr) {
+                PlayerCharacter->TurnLeft = false;
+                PlayerCharacter->TurnRight = false;
+            }
+        }
+    }
 }
