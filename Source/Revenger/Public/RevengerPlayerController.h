@@ -40,13 +40,6 @@ public:
 
     virtual void Tick(float DeltaTime) override;
 
-   UFUNCTION()
-    FVector GetDesiredVelocity();
-
-   UFUNCTION()
-    void RotateToGoal(const FVector GoalLocation, float DeltaTime);
-   UFUNCTION()
-    void MoveToGoal(); 
    protected:
     /** True if the controlled character should navigate to the mouse cursor. */
     uint32 bMoveToMouseCursor : 1;
@@ -62,14 +55,18 @@ public:
     void OnSetDestinationReleased();
 
 private:
-    
+
+    void UpdateGoal();
+    void RotateToGoal(const FVector GoalLocation, float DeltaTime);
+    void MoveToGoal(float DeltaTime); 
+
     // Root motion related
     // Move to first goal while distance substract
-    void UpdateGoal();
 
     FVector CachedDestination;
     FVector NextClosestGoal;
 
     bool bNewGoal;
     float FollowTime; // For how long it has been pressed
+    float StateTransitionTime;
 };

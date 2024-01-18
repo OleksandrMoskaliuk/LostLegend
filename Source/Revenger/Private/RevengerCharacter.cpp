@@ -63,7 +63,7 @@ ARevengerCharacter::ARevengerCharacter()
     TurnRight = false;
     MovingRotationSpeed = 50;
     CharacterState = ECharacterState::IDLE;
-    MinimalDistanceToMove = 100.f;
+    MinimalDistanceToMove = 10.f;
 }
 
 // Called when the game starts or when spawned

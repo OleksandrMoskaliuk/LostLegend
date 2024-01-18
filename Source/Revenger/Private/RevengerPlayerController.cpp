@@ -29,6 +29,7 @@ ARevengerPlayerController::ARevengerPlayerController()
     NextClosestGoal = FVector::ZeroVector;
     FollowTime = 0.f;
     bNewGoal = false;
+    StateTransitionTime = 0;
 }
 
 void ARevengerPlayerController::BeginPlay()
@@ -47,18 +48,9 @@ void ARevengerPlayerController::Tick(float DeltaTime)
 {
     UpdateGoal();
     RotateToGoal(NextClosestGoal, DeltaTime * 2.f);
-    MoveToGoal();
+    MoveToGoal(DeltaTime);
 }
 
-FVector ARevengerPlayerController::GetDesiredVelocity()
-{
-    if (this->CachedDestination != FVector()) {
-        FVector PlayerLocation = GetPawn()->GetActorLocation();
-        FVector DesiredVelocity = UKismetMathLibrary::GetDirectionUnitVector(PlayerLocation, CachedDestination);
-        return DesiredVelocity;
-    }
-    return FVector();
-}
 
 void ARevengerPlayerController::SetupInputComponent()
 {
@@ -180,37 +172,60 @@ void ARevengerPlayerController::UpdateGoal()
             UNavigationPath* Path = UNavigationSystemV1::FindPathToActorSynchronously(this, CachedDestination, ControlledPawn, 100.f);
             for (FVector Ph : Path->PathPoints) {
                 DrawDebugSphere(GetWorld(), Ph, 20.f, 10, FColor::Red, false, 1.f);
-            }
-
-            // Find closest point to move there
-            float DistanceToPoint = 10000.f;
-            for (FVector Ph : Path->PathPoints) {
-                float CurrentDistance = FVector::DistXY(PlayerLocation, Ph);
-                // We already close, check if the is another point
-                if (CurrentDistance < DistanceToPoint && CurrentDistance > PlayerCharacter->MinimalDistanceToMove) {
-                    DistanceToPoint = CurrentDistance;
-                    NextClosestGoal = Ph;
-                }
-            }
+            }            
+            // Firs point if navigation is last point of array, so next point to follow will be:
+            NextClosestGoal = Path->PathPoints[Path->PathPoints.Max() - 2];
             // Draw closest goal
             DrawDebugSphere(GetWorld(), NextClosestGoal, 50.f, 10, FColor::Green, false, 1.f);
         }
     }
 }
 
-void ARevengerPlayerController::MoveToGoal()
+void ARevengerPlayerController::MoveToGoal(float DeltaTime)
 {
     if (APawn* ControlledPawn = GetPawn()) 
     {
         if (ARevengerCharacter* PlayerCharacter = Cast<ARevengerCharacter>(ControlledPawn)) 
         {
-            if (FVector::DistXY(ControlledPawn->GetActorLocation(), CachedDestination) > PlayerCharacter->MinimalDistanceToMove
-             && CachedDestination != FVector::ZeroVector
-             && PlayerCharacter
-             && PlayerCharacter->CharacterState == ECharacterState::IDLE)
+            float DistanceToClosestGoal = FVector::DistXY(ControlledPawn->GetActorLocation(), NextClosestGoal); 
+            // Slow down when goal is close
+            bool RunState = PlayerCharacter->CharacterState == ECharacterState::SLOW_RUN
+                || PlayerCharacter->CharacterState == ECharacterState::MEDIUM_RUN
+                || PlayerCharacter->CharacterState == ECharacterState::FAST_RUN;
+            if (PlayerCharacter
+                && CachedDestination != FVector::ZeroVector
+                && DistanceToClosestGoal < 120.f
+                && RunState) 
             {
                 PlayerCharacter->CharacterState = ECharacterState::WALK;
             }
+
+            // Start moving
+            if (PlayerCharacter 
+             && CachedDestination != FVector::ZeroVector
+             && PlayerCharacter->CharacterState != ECharacterState::ROTATE
+             && DistanceToClosestGoal > PlayerCharacter->MinimalDistanceToMove
+             && PlayerCharacter->CharacterState == ECharacterState::IDLE
+             || PlayerCharacter->CharacterState == ECharacterState::SLOW_RUN)
+            {
+                PlayerCharacter->CharacterState = ECharacterState::WALK;
+            }
+
+            // Slow run 
+            if (PlayerCharacter 
+             && CachedDestination != FVector::ZeroVector
+             && DistanceToClosestGoal > 400.f
+             && PlayerCharacter->CharacterState == ECharacterState::WALK
+             && StateTransitionTime > 2.5f)
+            {
+                PlayerCharacter->CharacterState = ECharacterState::SLOW_RUN;
+            }
+            if (PlayerCharacter->CharacterState == ECharacterState::IDLE) 
+            {
+                StateTransitionTime = 0.f;
+            }
+            StateTransitionTime += DeltaTime;
+            GEngine->AddOnScreenDebugMessage(12, 1.5f, FColor::Green, "StateTransitionTime = " + FString::SanitizeFloat(StateTransitionTime));
         }
 
     }
