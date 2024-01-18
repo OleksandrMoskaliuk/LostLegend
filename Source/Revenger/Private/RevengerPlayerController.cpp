@@ -267,6 +267,7 @@ void ARevengerPlayerController::RotateToGoal(const FVector& GoalLocation, float 
                 FString RotationDirection = (Sign > 0) ? TEXT("Right") : TEXT("Left");
                 // Root motion rotation relative
                 if (PlayerCharacter != nullptr && PlayerSpeed <= 0) {
+                    PlayerCharacter->CharacterState = ECharacterState::ROTATE;
                     // turn right
                     if (Sign > 0) {
                         PlayerCharacter->TurnRight = true;

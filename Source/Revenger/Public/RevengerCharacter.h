@@ -29,7 +29,7 @@ private:
 public:
 
     /** Current player state */ 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = State)
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = State)
     ECharacterState CharacterState;
 
     /** Player speed */
