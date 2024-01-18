@@ -44,9 +44,10 @@ public:
     FVector GetDesiredVelocity();
 
    UFUNCTION()
-    void RotateToGoal(const FVector& GoalLocation, float DeltaTime);
-
-protected:
+    void RotateToGoal(const FVector GoalLocation, float DeltaTime);
+   UFUNCTION()
+    void MoveToGoal(); 
+   protected:
     /** True if the controlled character should navigate to the mouse cursor. */
     uint32 bMoveToMouseCursor : 1;
 
@@ -64,8 +65,10 @@ private:
     
     // Root motion related
     // Move to first goal while distance substract
-    bool CanMoveNextGoal(); 
+    void UpdateGoal();
+
     FVector CachedDestination;
+    FVector NextClosestGoal;
 
     bool bNewGoal;
     float FollowTime; // For how long it has been pressed

@@ -26,6 +26,7 @@ ARevengerPlayerController::ARevengerPlayerController()
     bShowMouseCursor = true;
     DefaultMouseCursor = EMouseCursor::Default;
     CachedDestination = FVector::ZeroVector;
+    NextClosestGoal = FVector::ZeroVector;
     FollowTime = 0.f;
     bNewGoal = false;
 }
@@ -44,7 +45,9 @@ void ARevengerPlayerController::BeginPlay()
 
 void ARevengerPlayerController::Tick(float DeltaTime)
 {
-    RotateToGoal(CachedDestination, DeltaTime * 2.f);
+    UpdateGoal();
+    RotateToGoal(NextClosestGoal, DeltaTime * 2.f);
+    MoveToGoal();
 }
 
 FVector ARevengerPlayerController::GetDesiredVelocity()
@@ -132,6 +135,8 @@ void ARevengerPlayerController::OnSetDestinationTriggered()
 
 void ARevengerPlayerController::OnSetDestinationReleased()
 {
+    APawn* ControlledPawn = GetPawn();
+    ARevengerCharacter* PlayerCharacter = Cast<ARevengerCharacter>(ControlledPawn);
     // If it was a short press
     // GEngine->AddOnScreenDebugMessage(0, 1.2f, FColor::Red, "Released");
     if (FollowTime <= ShortPressThreshold) {
@@ -148,22 +153,7 @@ void ARevengerPlayerController::OnSetDestinationReleased()
         // If we hit a surface, cache the location
         if (bHitSuccessful) {
             CachedDestination = Hit.Location;
-            // get navigation goals using navigation volume
         }
-
-        // Move towards mouse pointer or touch
-        APawn* ControlledPawn = GetPawn();
-        if (ControlledPawn != nullptr && bHitSuccessful) {
-            FVector PlayerLocation = ControlledPawn->GetActorLocation();
-            UNavigationPath* Path = UNavigationSystemV1::FindPathToActorSynchronously(this, CachedDestination, ControlledPawn, 10.f);
-            for (FVector Ph : Path->PathPoints) {
-                DrawDebugSphere(GetWorld(), Ph, 20.f, 10, FColor::Red, false, 5.f);
-            }
-            FVector WorldDirection = (CachedDestination - ControlledPawn->GetActorLocation())
-                                         .GetSafeNormal();
-            // ControlledPawn->AddMovementInput(WorldDirection, 1.0, false);
-        }
-
         // Spawn cursor effect
         UNiagaraFunctionLibrary::SpawnSystemAtLocation(
             this, FXCursor, CachedDestination, FRotator::ZeroRotator,
@@ -172,27 +162,75 @@ void ARevengerPlayerController::OnSetDestinationReleased()
     FollowTime = 0.f;
 }
 
-bool ARevengerPlayerController::CanMoveNextGoal()
+void ARevengerPlayerController::UpdateGoal()
 {
-    return false;
+    APawn* ControlledPawn = GetPawn();
+    if (ControlledPawn != nullptr) {
+        FVector PlayerLocation = ControlledPawn->GetActorLocation();
+        ARevengerCharacter* PlayerCharacter = Cast<ARevengerCharacter>(ControlledPawn);
+        // Player reach last goal location
+        float IsGoalReachedDistance = 50;
+        if (FVector::DistXY(PlayerLocation, CachedDestination) < IsGoalReachedDistance || CachedDestination == FVector::ZeroVector && PlayerCharacter) {
+            PlayerCharacter->CharacterState = ECharacterState::IDLE;
+            CachedDestination = FVector::ZeroVector;
+            return;
+        } else if (PlayerCharacter) {
+
+            // Draw path
+            UNavigationPath* Path = UNavigationSystemV1::FindPathToActorSynchronously(this, CachedDestination, ControlledPawn, 100.f);
+            for (FVector Ph : Path->PathPoints) {
+                DrawDebugSphere(GetWorld(), Ph, 20.f, 10, FColor::Red, false, 1.f);
+            }
+
+            // Find closest point to move there
+            float DistanceToPoint = 10000.f;
+            for (FVector Ph : Path->PathPoints) {
+                float CurrentDistance = FVector::DistXY(PlayerLocation, Ph);
+                // We already close, check if the is another point
+                if (CurrentDistance < DistanceToPoint && CurrentDistance > PlayerCharacter->MinimalDistanceToMove) {
+                    DistanceToPoint = CurrentDistance;
+                    NextClosestGoal = Ph;
+                }
+            }
+            // Draw closest goal
+            DrawDebugSphere(GetWorld(), NextClosestGoal, 50.f, 10, FColor::Green, false, 1.f);
+        }
+    }
 }
 
-void ARevengerPlayerController::RotateToGoal(const FVector& GoalLocation, float DeltaTime)
+void ARevengerPlayerController::MoveToGoal()
+{
+    if (APawn* ControlledPawn = GetPawn()) 
+    {
+        if (ARevengerCharacter* PlayerCharacter = Cast<ARevengerCharacter>(ControlledPawn)) 
+        {
+            if (FVector::DistXY(ControlledPawn->GetActorLocation(), CachedDestination) > PlayerCharacter->MinimalDistanceToMove
+             && CachedDestination != FVector::ZeroVector
+             && PlayerCharacter
+             && PlayerCharacter->CharacterState == ECharacterState::IDLE)
+            {
+                PlayerCharacter->CharacterState = ECharacterState::WALK;
+            }
+        }
+
+    }
+    return;
+}
+
+void ARevengerPlayerController::RotateToGoal(const FVector GoalLocation, float DeltaTime)
 {
     APawn* ControlledPawn = GetPawn();
     ARevengerCharacter* PlayerCharacter = Cast<ARevengerCharacter>(ControlledPawn);
     float DistanceToGoal = 0.f;
     float AllowedDistance;
     float PlayerSpeed = 0.f;
-   
-    if (ControlledPawn) 
-    {
+
+    if (ControlledPawn) {
         DistanceToGoal = FVector::DistXY(GoalLocation, ControlledPawn->GetActorLocation());
         UPawnMovementComponent* MoveComponent = ControlledPawn->GetMovementComponent();
         PlayerSpeed = MoveComponent->Velocity.Size();
     }
-    if (true) 
-    {
+    if (true) {
         GEngine->AddOnScreenDebugMessage(8, 2.f, FColor::Red, "Distance to goal = " + FString::SanitizeFloat(DistanceToGoal));
         GEngine->AddOnScreenDebugMessage(10, 2.f, FColor::Blue, "Speed = " + FString::SanitizeFloat(PlayerSpeed));
     }
@@ -237,6 +275,7 @@ void ARevengerPlayerController::RotateToGoal(const FVector& GoalLocation, float 
         if (PlayerCharacter != nullptr) {
             PlayerCharacter->TurnLeft = false;
             PlayerCharacter->TurnRight = false;
+            PlayerCharacter->CharacterState = ECharacterState::IDLE;
         }
     };
 
@@ -271,7 +310,7 @@ void ARevengerPlayerController::RotateToGoal(const FVector& GoalLocation, float 
                     // turn right
                     if (Sign > 0) {
                         PlayerCharacter->TurnRight = true;
-                    // turn left
+                        // turn left
                     } else if (Sign < 0) {
                         PlayerCharacter->TurnLeft = true;
                     }
@@ -280,13 +319,13 @@ void ARevengerPlayerController::RotateToGoal(const FVector& GoalLocation, float 
                 // Update turn variables
                 PlayerCharacter->TurnLeft = false;
                 PlayerCharacter->TurnRight = false;
+                PlayerCharacter->CharacterState = ECharacterState::IDLE;
             }
         }
     };
 
     // When player moving , use only precise rotation
-    if (PlayerSpeed > 100.f) 
-    {
+    if (PlayerSpeed > 100.f) {
         PreciseRotate(10);
         return;
     }
@@ -296,25 +335,28 @@ void ARevengerPlayerController::RotateToGoal(const FVector& GoalLocation, float 
     AllowedDistance = 50;
     if (DistanceToGoal <= AllowedDistance) {
         if (PlayerCharacter != nullptr) {
-         // Update turn variables
-         PlayerCharacter->TurnLeft = false;
-         PlayerCharacter->TurnRight = false;
+            // Update turn variables
+            PlayerCharacter->TurnLeft = false;
+            PlayerCharacter->TurnRight = false;
         }
         return;
     }
 
     // Goal is near to player, use root motion
-    AllowedDistance = 200;
+    AllowedDistance = 300;
     if (DistanceToGoal <= AllowedDistance) {
         RootMotionRotation(60);
         return;
     }
 
     // Goal is far from player, use root motion
-    AllowedDistance = 200;
+    AllowedDistance = 600;
     if (DistanceToGoal >= AllowedDistance) {
         RootMotionRotation(30);
         return;
+    } 
+    else {
+        RootMotionRotation(30);
+        return; 
     }
-
 }

@@ -27,8 +27,7 @@ private:
     class USpringArmComponent* CameraBoom;
 
 public:
-
-    /** Current player state */ 
+    /** Current player state */
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = State)
     ECharacterState CharacterState;
 
@@ -36,14 +35,18 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement)
     float GroundSpeed;
 
+    /** Minimal Distance to move */
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement)
+    float MinimalDistanceToMove;
+
     /** Player rotation speed while moving */
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement)
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement)
     float MovingRotationSpeed;
 
-     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement)
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement)
     bool TurnRight;
 
-       UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement)
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement)
     bool TurnLeft;
 
 protected:
