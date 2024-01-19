@@ -5,7 +5,13 @@
 // Push value to array for processing arm length
 void URevengerSpringArmComponent::PullOrPush(float Value)
 {
+    // GEngine->AddOnScreenDebugMessage(-134, 3.f, FColor::White, "Elements = " + FString::SanitizeFloat(ZoomSequence.Num()));
     ZoomSequence.Push(Value);
+    if (TimerManager && !(TimerManager->IsTimerActive(InterpolateTargetArmLengthTimer))) {
+        TimerManager->ClearTimer(InterpolateTargetArmLengthTimer);
+        TimerManager->SetTimer(InterpolateTargetArmLengthTimer,
+            InterpolateTargetArmLengthDelegate, 0.010f, true);
+    } 
 }
 
 URevengerSpringArmComponent::URevengerSpringArmComponent()
@@ -24,50 +30,32 @@ void URevengerSpringArmComponent::BeginPlay()
     // Only work through delegate
     InterpolateTargetArmLengthDelegate.BindUFunction(
         this, "InterpolateTargetArmLengthHandler");
-    TargetArmLength = 1000;
-    TargetArmLengthStartDistance = TargetArmLength;
-}
-
-void URevengerSpringArmComponent::InterpolateTargetArmLength(float From, float To)
-{
-
-    if (TimerManager && TimerManager->IsTimerActive(InterpolateTargetArmLengthTimer)) {
-        LerpTargetArmLengthTimerAlpha = 0.f;
-        TimerManager->ClearTimer(InterpolateTargetArmLengthTimer);
-        //PrimaryComponentTick.bCanEverTick = true;
-    }
-
-    if (TimerManager) {
-        TargetArmLengthStartDistance = From;
-        NewTargetArmLengthDistance = To;
-        // Do not work
-        /*TimerManager->SetTimer(
-            InterpolateTargetArmLengthTimer, this,
-            &UDEV_SpringArmComponent::InterpolateTargetArmLengthHandler, 60.f,
-            true);*/
-        TimerManager->SetTimer(InterpolateTargetArmLengthTimer,
-            InterpolateTargetArmLengthDelegate, 0.016f, true);
-       
-    } else {
-        GEngine->AddOnScreenDebugMessage(0, 3.f, FColor::Red, "No timer in spring arm component!");
-    }
+    TargetArmLengthStartDistance = this->TargetArmLength;
+    NewTargetArmLengthDistance = this->TargetArmLength;
 }
 
 void URevengerSpringArmComponent::InterpolateTargetArmLengthHandler()
 {
-    if (LerpTargetArmLengthTimerAlpha >= 1.f) {
+    if (LerpTargetArmLengthTimerAlpha >= 0.99f && ZoomSequence.Num() == 0) {
+        TimerManager->ClearTimer(InterpolateTargetArmLengthTimer);
+        return;
+    }
+
+    if (LerpTargetArmLengthTimerAlpha >= 0.99f && ZoomSequence.Num() > 0) {
         LerpTargetArmLengthTimerAlpha = 0.f;
-        if (TimerManager) {
-            TimerManager->ClearTimer(InterpolateTargetArmLengthTimer);
-        }
-        // SetComponentTickEnabled(false);
-    } else {
-        // If set to false TargetArmLength can't be changed in runtime
-        // SetComponentTickEnabled(true);
+        float From = this->TargetArmLength;
+        float To = this->TargetArmLength + (PushOrPullArmStep * -ZoomSequence.Pop());
+        TargetArmLengthStartDistance = From;
+        NewTargetArmLengthDistance = To;
+        return;
+    }
+
+    if (LerpTargetArmLengthTimerAlpha < 0.99f) {
+        NewTargetArmLengthDistance = FMath::Clamp(NewTargetArmLengthDistance, MinCameraDistanceToCharacter, MaxCameraDistanceToCharacter);
         this->TargetArmLength = FMath::Lerp(TargetArmLengthStartDistance, NewTargetArmLengthDistance,
             LerpTargetArmLengthTimerAlpha);
-        LerpTargetArmLengthTimerAlpha += 0.01f;
-        // PrimaryComponentTick.SetTickFunctionEnable(true);
+        LerpTargetArmLengthTimerAlpha += InterpolationSpeed * GetWorld()->GetDeltaSeconds();
+        return;
     }
 }
 
@@ -76,17 +64,4 @@ void URevengerSpringArmComponent::TickComponent(
     FActorComponentTickFunction* ThisTickFunction)
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-    GEngine->AddOnScreenDebugMessage(-134, 3.f, FColor::White, "Elements = " + FString::SanitizeFloat(ZoomSequence.Num()));
-    if (TimerManager 
-        && !(TimerManager->IsTimerActive(InterpolateTargetArmLengthTimer))
-        && (ZoomSequence.Num() > 0))
-    {     
-        float From = this->TargetArmLength;
-        float To = this->TargetArmLength + (120 * ZoomSequence.Pop());
-        // Clamp distance to player
-        if (To <= MaxCameraDistanceToCharacter || To >= MinCameraDistanceToCharacter) {
-           // GEngine->AddOnScreenDebugMessage(145, 0.5f, FColor::Red, "Input = " + FString::SanitizeFloat(To));
-            this->InterpolateTargetArmLength(From, To);
-        }
-    }
 }
