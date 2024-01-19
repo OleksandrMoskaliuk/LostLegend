@@ -8,7 +8,6 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/Pawn.h"
-#include "InputActionValue.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "RevengerCharacter.h"
@@ -18,6 +17,8 @@
 #include "GameFramework/PawnMovementComponent.h"
 #include "NavigationPath.h"
 #include "NavigationSystem.h"
+// Handle camera movement
+#include "Components/RevengerSpringArmComponent.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -73,6 +74,11 @@ void ARevengerPlayerController::SetupInputComponent()
         EnhancedInputComponent->BindAction(
             SetDestinationClickAction, ETriggerEvent::Canceled, this,
             &ARevengerPlayerController::OnSetDestinationReleased);
+        // Camera control
+        EnhancedInputComponent->BindAction(
+            SetCameraZoomAction, ETriggerEvent::Triggered, this,
+            &ARevengerPlayerController::CameraZoom);
+
     } else {
         UE_LOG(
             LogTemplateCharacter, Error,
@@ -85,7 +91,7 @@ void ARevengerPlayerController::SetupInputComponent()
 
 void ARevengerPlayerController::OnInputStarted()
 {
-    StopMovement();
+  // TO DO: Stop prevoius movement using this function
 }
 
 // Triggered every frame when the input is held down
@@ -152,6 +158,24 @@ void ARevengerPlayerController::OnSetDestinationReleased()
     }
     FollowTime = 0.f;
 }
+
+void ARevengerPlayerController::CameraZoom(const FInputActionValue& Value)
+{
+    
+    if (APawn* ControlledPawn = GetPawn()) {
+        // Update goal for using move and other logick only when player idle
+        if (ARevengerCharacter* PlayerCharacter = Cast<ARevengerCharacter>(ControlledPawn)) 
+        {
+            if (URevengerSpringArmComponent* SpringArm = PlayerCharacter->GetCameraBoom()) 
+            {
+                SpringArm->PullOrPush(Value.Get<float>());
+            }
+            
+        }
+    }
+}
+
+
 
 void ARevengerPlayerController::UpdateGoal()
 {

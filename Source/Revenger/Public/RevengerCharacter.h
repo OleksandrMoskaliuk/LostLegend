@@ -7,6 +7,8 @@
 #include "GameFramework/Character.h"
 #include "RevengerCharacter.generated.h"
 
+class URevengerSpringArmComponent;
+
 UCLASS()
 class REVENGER_API ARevengerCharacter : public ACharacter {
     GENERATED_BODY()
@@ -24,7 +26,7 @@ private:
     /** Camera boom positioning the camera above the character */
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera,
         meta = (AllowPrivateAccess = "true"))
-    class USpringArmComponent* CameraBoom;
+    class URevengerSpringArmComponent* CameraBoom;
 
 public:
     /** Current player state */
@@ -65,7 +67,7 @@ public:
         return TopDownCameraComponent;
     }
     /** Returns CameraBoom subobject **/
-    FORCEINLINE class USpringArmComponent* GetCameraBoom() const
+    FORCEINLINE class URevengerSpringArmComponent* GetCameraBoom() const
     {
         return CameraBoom;
     }

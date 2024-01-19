@@ -10,6 +10,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Materials/Material.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Components/RevengerSpringArmComponent.h"
 
 // get game mode
 // #include "Kismet/GameplayStatics.h"
@@ -40,7 +41,7 @@ ARevengerCharacter::ARevengerCharacter()
     GetCharacterMovement()->bSnapToPlaneAtStart = true;
 
     // Create a camera boom...
-    CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
+    CameraBoom = CreateDefaultSubobject<URevengerSpringArmComponent>(TEXT("CameraBoom"));
     CameraBoom->SetupAttachment(RootComponent);
     CameraBoom->SetUsingAbsoluteRotation(
         true); // Don't want arm to rotate when character does

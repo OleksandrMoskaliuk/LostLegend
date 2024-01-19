@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "InputActionValue.h"
 #include "GameFramework/PlayerController.h"
 #include "RevengerPlayerController.generated.h"
 
@@ -38,6 +39,11 @@ public:
         meta = (AllowPrivateAccess = "true"))
     UInputAction* SetDestinationClickAction;
 
+    /** Control top down camera zoom */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input,
+        meta = (AllowPrivateAccess = "true"))
+    UInputAction* SetCameraZoomAction;
+
     virtual void Tick(float DeltaTime) override;
 
    protected:
@@ -53,6 +59,9 @@ public:
     void OnInputStarted();
     void OnSetDestinationTriggered();
     void OnSetDestinationReleased();
+
+    /** Input handlers for camera action. */
+    void CameraZoom(const FInputActionValue& Value);
 
 private:
 
