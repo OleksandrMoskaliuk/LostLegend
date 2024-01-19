@@ -39,15 +39,13 @@ public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement)
     float MinimalDistanceToMove;
 
+    /** Minimal time between movements transition state */
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement)
+    float MinimalTransitionStateTime;
+
     /** Player rotation speed while moving */
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement)
     float MovingRotationSpeed;
-
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement)
-    bool TurnRight;
-
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement)
-    bool TurnLeft;
 
 protected:
     // Called when the game starts or when spawned

@@ -59,11 +59,10 @@ ARevengerCharacter::ARevengerCharacter()
     PrimaryActorTick.bStartWithTickEnabled = true;
     // Movement
     GroundSpeed = 0.f;
-    TurnLeft = false;
-    TurnRight = false;
     MovingRotationSpeed = 50;
     CharacterState = ECharacterState::IDLE;
     MinimalDistanceToMove = 10.f;
+    MinimalTransitionStateTime = 1.2f;
 }
 
 // Called when the game starts or when spawned

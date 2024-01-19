@@ -58,7 +58,7 @@ private:
 
     void UpdateGoal();
     void RotateToGoal(const FVector GoalLocation, float DeltaTime);
-    void MoveToGoal(float DeltaTime); 
+    void MoveToGoal(); 
 
     // Root motion related
     // Move to first goal while distance substract

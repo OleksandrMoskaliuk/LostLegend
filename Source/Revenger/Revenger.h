@@ -9,7 +9,8 @@ DECLARE_LOG_CATEGORY_EXTERN(LogTopDownCppImport, Log, All);
 UENUM(BlueprintType)
 enum class ECharacterState : uint8 {
     IDLE UMETA(DisplayName = "Idle"),
-    ROTATE UMETA(DisplayName = "Rotate"),
+    TURN_LEFT UMETA(DisplayName = "Turn_Left"),
+    TURN_RIGHT UMETA(DisplayName = "Turn_Right"),
     // Moving
     CROUCHING UMETA(DisplayName = "Crouching"),
     WALK UMETA(DisplayName = "Walk"),
