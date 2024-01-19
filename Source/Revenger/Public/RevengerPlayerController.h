@@ -3,8 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "InputActionValue.h"
 #include "GameFramework/PlayerController.h"
+#include "InputActionValue.h"
 #include "RevengerPlayerController.generated.h"
 
 /** Forward declaration to improve compiling times */
@@ -44,9 +44,29 @@ public:
         meta = (AllowPrivateAccess = "true"))
     UInputAction* SetCameraZoomAction;
 
+    /** Control top down camera zoom */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input,
+        meta = (AllowPrivateAccess = "true"))
+    UInputAction* MoveCameraUpAction;
+
+    /** Control top down camera zoom */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input,
+        meta = (AllowPrivateAccess = "true"))
+    UInputAction* MoveCameraDownAction;
+
+    /** Control top down camera zoom */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input,
+        meta = (AllowPrivateAccess = "true"))
+    UInputAction* MoveCameraLeftAction;
+
+    /** Control top down camera zoom */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input,
+        meta = (AllowPrivateAccess = "true"))
+    UInputAction* MoveCameraRightAction;
+
     virtual void Tick(float DeltaTime) override;
 
-   protected:
+protected:
     /** True if the controlled character should navigate to the mouse cursor. */
     uint32 bMoveToMouseCursor : 1;
 
@@ -61,13 +81,16 @@ public:
     void OnSetDestinationReleased();
 
     /** Input handlers for camera action. */
-    void CameraZoom(const FInputActionValue& Value);
+    void OnCameraZoom(const FInputActionValue& Value);
+    void OnMoveCameraUp(const FInputActionValue& Value);
+    void OnMoveCameraDown(const FInputActionValue& Value);
+    void OnMoveCameraLeft(const FInputActionValue& Value);
+    void OnMoveCameraRight(const FInputActionValue& Value);
 
 private:
-
     void UpdateGoal();
     void RotateToGoal(const FVector GoalLocation, float DeltaTime);
-    void MoveToGoal(); 
+    void MoveToGoal();
 
     // Root motion related
     // Move to first goal while distance substract
