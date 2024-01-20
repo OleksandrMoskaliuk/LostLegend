@@ -29,9 +29,9 @@
 #include "Components/RevengerCameraComponent.h"
 #include "Components/RevengerSpringArmComponent.h"
 
-#include "InputActionValue.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "InputActionValue.h"
 
 // Sets default values
 ARevengerCameraPawn::ARevengerCameraPawn()
@@ -52,7 +52,7 @@ ARevengerCameraPawn::ARevengerCameraPawn()
     CameraBoom->bEnableCameraRotationLag = true;
     CameraBoom->CameraLagSpeed = 5.f;
     CameraBoom->CameraRotationLagSpeed = 5.f;
-    
+
     // Create a camera...
     TopDownCameraComponent = CreateDefaultSubobject<URevengerCameraComponent>(TEXT("TopDownCamera"));
     TopDownCameraComponent->SetupAttachment(CameraBoom,
@@ -76,4 +76,97 @@ void ARevengerCameraPawn::Tick(float DeltaTime)
 void ARevengerCameraPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
     Super::SetupPlayerInputComponent(PlayerInputComponent);
+}
+
+void ARevengerCameraPawn::MoveCameraForward()
+{
+    float DeltaTime = GetWorld()->GetDeltaSeconds();
+    float Speed = FMath::Lerp(MinCameraSpeed, MaxCameraSpeed, CameraBoom->CameraZoom) * 100.f * DeltaTime;
+
+    float ForwardMovementAmount = Speed * GetWorld()->GetDeltaSeconds();
+
+    // Get the forward vector of the camera
+    FVector ForwardVector = this->GetActorForwardVector();
+
+    // Move the camera forward along its current facing direction
+    FVector NewLocation = this->GetActorLocation() + ForwardVector * ForwardMovementAmount;
+
+    // Set the new location with the same Z (height)
+    this->SetActorLocation(FVector(NewLocation.X, NewLocation.Y, this->GetActorLocation().Z));
+}
+
+void ARevengerCameraPawn::MoveCameraBackward()
+{
+    float DeltaTime = GetWorld()->GetDeltaSeconds();
+    float Speed = FMath::Lerp(MinCameraSpeed, MaxCameraSpeed, CameraBoom->CameraZoom) * 100.f * DeltaTime;
+    float BackwardMovementAmount = Speed * GetWorld()->GetDeltaSeconds();
+
+    // Get the forward vector of the camera
+    FVector ForwardVector = -this->GetActorForwardVector();
+
+    // Move the camera forward along its current facing direction
+    FVector NewLocation = this->GetActorLocation() + ForwardVector * BackwardMovementAmount;
+
+    // Set the new location with the same Z (height)
+    this->SetActorLocation(FVector(NewLocation.X, NewLocation.Y, this->GetActorLocation().Z));
+}
+
+void ARevengerCameraPawn::MoveCameraLeft()
+{
+    float DeltaTime = GetWorld()->GetDeltaSeconds();
+    float Speed = FMath::Lerp(MinCameraSpeed, MaxCameraSpeed, CameraBoom->CameraZoom) * 100 * DeltaTime;
+    float LeftMovementAmount = Speed * GetWorld()->GetDeltaSeconds();
+
+    // Get the right vector of the camera
+    FVector RightVector = -this->GetActorRightVector();
+
+    // Move the camera left along its current facing direction
+    FVector NewLocation = this->GetActorLocation() + RightVector * LeftMovementAmount;
+
+    // Set the new location with the same Z (height)
+    this->SetActorLocation(FVector(NewLocation.X, NewLocation.Y, this->GetActorLocation().Z));
+}
+
+void ARevengerCameraPawn::MoveCameraRight()
+{
+    float DeltaTime = GetWorld()->GetDeltaSeconds();
+    float Speed = FMath::Lerp(MinCameraSpeed, MaxCameraSpeed, CameraBoom->CameraZoom) * 100.f * DeltaTime;
+    float RightMovementAmount = Speed * GetWorld()->GetDeltaSeconds();
+
+    // Get the right vector of the camera
+    FVector RightVector = this->GetActorRightVector();
+
+    // Move the camera right along its current facing direction
+    FVector NewLocation = this->GetActorLocation() + RightVector * RightMovementAmount;
+
+    // Set the new location with the same Z (height)
+    this->SetActorLocation(FVector(NewLocation.X, NewLocation.Y, this->GetActorLocation().Z));
+}
+
+void ARevengerCameraPawn::RotateCameraLeft()
+{
+    float RotationAmount = CameraRotationSpeed * GetWorld()->GetDeltaSeconds();
+
+    // Get the rotation of the camera
+    FRotator CompRotator = this->GetActorRotation();
+
+    // Rotate the camera left
+    FRotator NewRotation = CompRotator + FRotator(0.0f, -RotationAmount, 0.0f);
+
+    // Set the new rotation with the same Z (height)
+    this->SetActorRotation(FRotator(NewRotation.Pitch, NewRotation.Yaw, this->GetActorRotation().Roll));
+}
+
+void ARevengerCameraPawn::RotateCameraRight()
+{
+    float RotationAmount = CameraRotationSpeed * GetWorld()->GetDeltaSeconds();
+
+    // Get the rotation of the camera
+    FRotator CompRotator = this->GetActorRotation();
+
+    // Rotate the camera right
+    FRotator NewRotation = CompRotator + FRotator(0.0f, RotationAmount, 0.0f);
+
+    // Set the new rotation with the same Z (height)
+    this->SetActorRotation(FRotator(NewRotation.Pitch, NewRotation.Yaw, this->GetActorRotation().Roll));
 }

@@ -244,26 +244,44 @@ void ARevengerPlayerController::OnCameraZoom(const FInputActionValue& Value)
 
 void ARevengerPlayerController::OnMoveCameraForward(const FInputActionValue& Value)
 {
+    if (CameraPawn) {
+        CameraPawn->MoveCameraForward();
+    }
 }
 
 void ARevengerPlayerController::OnMoveCameraBackward(const FInputActionValue& Value)
 {
+    if (CameraPawn) {
+        CameraPawn->MoveCameraBackward();
+    }
 }
 
 void ARevengerPlayerController::OnMoveCameraLeft(const FInputActionValue& Value)
 {
+    if (CameraPawn) {
+        CameraPawn->MoveCameraLeft();
+    }
 }
 
 void ARevengerPlayerController::OnMoveCameraRight(const FInputActionValue& Value)
 {
+    if (CameraPawn) {
+        CameraPawn->MoveCameraRight();
+    }
 }
 
 void ARevengerPlayerController::OnRotateCameraLeft(const FInputActionValue& Value)
 {
+    if (CameraPawn) {
+        CameraPawn->RotateCameraLeft();
+    }
 }
 
 void ARevengerPlayerController::OnRotateCameraRight(const FInputActionValue& Value)
 {
+    if (CameraPawn) {
+        CameraPawn->RotateCameraRight();
+    }
 }
 
 void ARevengerPlayerController::UpdateGoal()

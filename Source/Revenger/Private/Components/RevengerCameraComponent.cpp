@@ -20,7 +20,7 @@ void URevengerCameraComponent::MoveCameraForward(float Amount)
 void URevengerCameraComponent::MoveCameraBackward(float Amount)
 {
     // Adjust the movement amount based on your requirements
-    float ForwardMovementAmount = 2000.0f * GetWorld()->GetDeltaSeconds();
+    float ForwardMovementAmount = Amount * GetWorld()->GetDeltaSeconds();
 
     // Get the forward vector of the camera
     FVector ForwardVector = -this->GetForwardVector();
@@ -36,7 +36,7 @@ void URevengerCameraComponent::MoveCameraLeft(float Amount)
 {
 
     // Adjust the movement amount based on your requirements
-    float ForwardMovementAmount = 1000.0f * GetWorld()->GetDeltaSeconds();
+    float ForwardMovementAmount = Amount * GetWorld()->GetDeltaSeconds();
 
     // Get the forward vector of the camera
     FVector ForwardVector = -this->GetRightVector();
@@ -51,7 +51,7 @@ void URevengerCameraComponent::MoveCameraLeft(float Amount)
 void URevengerCameraComponent::MoveCameraRight(float Amount)
 {
     // Adjust the movement amount based on your requirements
-    float ForwardMovementAmount = 1000.0f * GetWorld()->GetDeltaSeconds();
+    float ForwardMovementAmount = Amount * GetWorld()->GetDeltaSeconds();
 
     // Get the forward vector of the camera
     FVector ForwardVector = this->GetRightVector();
@@ -66,7 +66,7 @@ void URevengerCameraComponent::MoveCameraRight(float Amount)
 void URevengerCameraComponent::RotateCameraLeft(float Amount)
 {
     // Adjust the rotation amount based on your requirements
-    float RotationAmount = 100.0f * GetWorld()->GetDeltaSeconds(); // Adjust this value as needed
+    float RotationAmount = Amount * GetWorld()->GetDeltaSeconds(); // Adjust this value as needed
 
     // Get the rotation of the camera
     FRotator CompRotator = this->GetComponentRotation();
@@ -81,7 +81,7 @@ void URevengerCameraComponent::RotateCameraLeft(float Amount)
 void URevengerCameraComponent::RotateCameraRight(float Amount)
 {
     // Adjust the rotation amount based on your requirements
-    float RotationAmount = 100.0f * GetWorld()->GetDeltaSeconds(); // Adjust this value as needed
+    float RotationAmount = Amount * GetWorld()->GetDeltaSeconds(); // Adjust this value as needed
 
     // Get the rotation of the camera
     FRotator CompRotator = this->GetComponentRotation();
