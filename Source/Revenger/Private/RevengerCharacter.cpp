@@ -11,6 +11,7 @@
 #include "Materials/Material.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Components/RevengerSpringArmComponent.h"
+#include "Components/RevengerCameraComponent.h"
 
 // get game mode
 // #include "Kismet/GameplayStatics.h"
@@ -50,7 +51,7 @@ ARevengerCharacter::ARevengerCharacter()
     CameraBoom->bDoCollisionTest = false; // Don't want to pull camera in when it collides with level
 
     // Create a camera...
-    TopDownCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("TopDownCamera"));
+    TopDownCameraComponent = CreateDefaultSubobject<URevengerCameraComponent>(TEXT("TopDownCamera"));
     TopDownCameraComponent->SetupAttachment(CameraBoom,
         USpringArmComponent::SocketName);
     TopDownCameraComponent->bUsePawnControlRotation = false; // Camera does not rotate relative to arm

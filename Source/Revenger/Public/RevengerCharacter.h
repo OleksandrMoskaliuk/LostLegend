@@ -8,6 +8,7 @@
 #include "RevengerCharacter.generated.h"
 
 class URevengerSpringArmComponent;
+class URevengerCameraComponent;
 
 UCLASS()
 class REVENGER_API ARevengerCharacter : public ACharacter {
@@ -21,7 +22,7 @@ private:
     /** Top down camera */
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera,
         meta = (AllowPrivateAccess = "true"))
-    class UCameraComponent* TopDownCameraComponent;
+    class URevengerCameraComponent* TopDownCameraComponent;
 
     /** Camera boom positioning the camera above the character */
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera,
@@ -62,7 +63,7 @@ public:
         class UInputComponent* PlayerInputComponent) override;
 
     /** Returns TopDownCameraComponent subobject **/
-    FORCEINLINE class UCameraComponent* GetTopDownCameraComponent() const
+    FORCEINLINE class URevengerCameraComponent* GetTopDownCameraComponent() const
     {
         return TopDownCameraComponent;
     }

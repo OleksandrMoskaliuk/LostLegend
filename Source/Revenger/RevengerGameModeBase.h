@@ -12,6 +12,12 @@
 UCLASS()
 class REVENGER_API ARevengerGameModeBase : public AGameModeBase {
     GENERATED_BODY()
+
 public:
     ARevengerGameModeBase();
+//private:
+//    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera,
+//        meta = (AllowPrivateAccess = "true"))
+//    class URevengerCameraComponent* TopDownCameraComponent;
+    
 };

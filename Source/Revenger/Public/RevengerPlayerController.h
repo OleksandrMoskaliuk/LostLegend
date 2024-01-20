@@ -92,8 +92,8 @@ protected:
 
     /** Input handlers for camera action. */
     void OnCameraZoom(const FInputActionValue& Value);
-    void OnMoveCameraUp(const FInputActionValue& Value);
-    void OnMoveCameraDown(const FInputActionValue& Value);
+    void OnMoveCameraForward(const FInputActionValue& Value);
+    void OnMoveCameraBackward(const FInputActionValue& Value);
     void OnMoveCameraLeft(const FInputActionValue& Value);
     void OnMoveCameraRight(const FInputActionValue& Value);
     void OnRotateCameraLeft(const FInputActionValue& Value);

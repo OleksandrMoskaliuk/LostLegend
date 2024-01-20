@@ -19,7 +19,7 @@
 #include "NavigationSystem.h"
 // Handle camera movement
 #include "Components/RevengerSpringArmComponent.h"
-#include "Camera/CameraComponent.h"
+#include "Components/RevengerCameraComponent.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -82,17 +82,17 @@ void ARevengerPlayerController::SetupInputComponent()
         // Camera move
         EnhancedInputComponent->BindAction(
             MoveCameraUpAction, ETriggerEvent::Started, this,
-            &ARevengerPlayerController::OnMoveCameraUp);
+            &ARevengerPlayerController::OnMoveCameraForward);
         EnhancedInputComponent->BindAction(
             MoveCameraUpAction, ETriggerEvent::Triggered, this,
-            &ARevengerPlayerController::OnMoveCameraUp);
+            &ARevengerPlayerController::OnMoveCameraForward);
 
          EnhancedInputComponent->BindAction(
             MoveCameraDownAction, ETriggerEvent::Started, this,
-            &ARevengerPlayerController::OnMoveCameraDown);
+            &ARevengerPlayerController::OnMoveCameraBackward);
         EnhancedInputComponent->BindAction(
              MoveCameraDownAction, ETriggerEvent::Triggered, this,
-            &ARevengerPlayerController::OnMoveCameraDown);
+            &ARevengerPlayerController::OnMoveCameraBackward);
 
          EnhancedInputComponent->BindAction(
             MoveCameraLeftAction, ETriggerEvent::Started, this,
@@ -221,7 +221,7 @@ void ARevengerPlayerController::OnCameraZoom(const FInputActionValue& Value)
     }
 }
 
-void ARevengerPlayerController::OnMoveCameraUp(const FInputActionValue& Value)
+void ARevengerPlayerController::OnMoveCameraForward(const FInputActionValue& Value)
 {
     if (APawn* ControlledPawn = GetPawn()) {
         // Update goal for using move and other logick only when player idle
@@ -246,12 +246,12 @@ void ARevengerPlayerController::OnMoveCameraUp(const FInputActionValue& Value)
 }
 
 
-void ARevengerPlayerController::OnMoveCameraDown(const FInputActionValue& Value)
+void ARevengerPlayerController::OnMoveCameraBackward(const FInputActionValue& Value)
 {
     if (APawn* ControlledPawn = GetPawn()) {
         // Update goal for using move and other logick only when player idle
         if (ARevengerCharacter* PlayerCharacter = Cast<ARevengerCharacter>(ControlledPawn)) {
-            if (UCameraComponent* CameraComp = PlayerCharacter->GetTopDownCameraComponent()) {
+            if (URevengerCameraComponent* CameraComp = PlayerCharacter->GetTopDownCameraComponent()) {
 
                 // Adjust the movement amount based on your requirements
                 float ForwardMovementAmount = 2000.0f * GetWorld()->GetDeltaSeconds();
@@ -275,7 +275,7 @@ void ARevengerPlayerController::OnMoveCameraLeft(const FInputActionValue& Value)
     if (APawn* ControlledPawn = GetPawn()) {
         // Update goal for using move and other logick only when player idle
         if (ARevengerCharacter* PlayerCharacter = Cast<ARevengerCharacter>(ControlledPawn)) {
-            if (UCameraComponent* CameraComp = PlayerCharacter->GetTopDownCameraComponent()) {
+            if (URevengerCameraComponent* CameraComp = PlayerCharacter->GetTopDownCameraComponent()) {
 
                 // Adjust the movement amount based on your requirements
                 float ForwardMovementAmount = 1000.0f * GetWorld()->GetDeltaSeconds();
@@ -299,7 +299,7 @@ void ARevengerPlayerController::OnMoveCameraRight(const FInputActionValue& Value
     if (APawn* ControlledPawn = GetPawn()) {
         // Update goal for using move and other logick only when player idle
         if (ARevengerCharacter* PlayerCharacter = Cast<ARevengerCharacter>(ControlledPawn)) {
-            if (UCameraComponent* CameraComp = PlayerCharacter->GetTopDownCameraComponent()) {
+            if (URevengerCameraComponent* CameraComp = PlayerCharacter->GetTopDownCameraComponent()) {
 
                 // Adjust the movement amount based on your requirements
                 float ForwardMovementAmount = 1000.0f * GetWorld()->GetDeltaSeconds();
@@ -322,7 +322,7 @@ void ARevengerPlayerController::OnRotateCameraLeft(const FInputActionValue& Valu
     if (APawn* ControlledPawn = GetPawn()) {
         // Update goal for using move and other logick only when player idle
         if (ARevengerCharacter* PlayerCharacter = Cast<ARevengerCharacter>(ControlledPawn)) {
-            if (UCameraComponent* CameraComp = PlayerCharacter->GetTopDownCameraComponent()) {
+            if (URevengerCameraComponent* CameraComp = PlayerCharacter->GetTopDownCameraComponent()) {
 
                 // Adjust the rotation amount based on your requirements
                 float RotationAmount = 100.0f * GetWorld()->GetDeltaSeconds(); // Adjust this value as needed
@@ -345,7 +345,7 @@ void ARevengerPlayerController::OnRotateCameraRight(const FInputActionValue& Val
     if (APawn* ControlledPawn = GetPawn()) {
         // Update goal for using move and other logick only when player idle
         if (ARevengerCharacter* PlayerCharacter = Cast<ARevengerCharacter>(ControlledPawn)) {
-            if (UCameraComponent* CameraComp = PlayerCharacter->GetTopDownCameraComponent()) {
+            if (URevengerCameraComponent* CameraComp = PlayerCharacter->GetTopDownCameraComponent()) {
 
                 // Adjust the rotation amount based on your requirements
                 float RotationAmount = 100.0f * GetWorld()->GetDeltaSeconds(); // Adjust this value as needed
