@@ -13,6 +13,7 @@ class UInputMappingContext;
 class UInputAction;
 class ARevengerGameModeBase;
 class ARevengerCameraPawn;
+class ARevengerCharacter;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
@@ -123,6 +124,6 @@ private:
     float FollowTime; // For how long it has been pressed
     float StateTransitionTime;
     // Pawns
-    APawn* DefaultPawn;
+    ARevengerCharacter* DefaultPawn;
     ARevengerCameraPawn* CameraPawn;
 };
