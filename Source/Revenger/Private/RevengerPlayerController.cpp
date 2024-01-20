@@ -237,8 +237,8 @@ void ARevengerPlayerController::OnSetDestinationReleased()
 
 void ARevengerPlayerController::OnCameraZoom(const FInputActionValue& Value)
 {
-
     if (CameraPawn) {
+        CameraPawn->GetCameraBoom()->ZoomCamera(Value.Get<float>());
     }
 }
 

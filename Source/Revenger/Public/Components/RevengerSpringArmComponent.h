@@ -2,22 +2,21 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
 #include "Containers/Array.h"
-#include "GameFramework/SpringArmComponent.h" 
+#include "CoreMinimal.h"
+#include "GameFramework/SpringArmComponent.h"
 #include "RevengerSpringArmComponent.generated.h"
 /**
- * 
+ *
  */
 UCLASS()
-class REVENGER_API URevengerSpringArmComponent : public USpringArmComponent
-{
+class REVENGER_API URevengerSpringArmComponent : public USpringArmComponent {
     GENERATED_BODY()
 public:
     URevengerSpringArmComponent();
 
     UFUNCTION()
-    void PullOrPush(float Value);
+    void ZoomCamera(float Value);
 
     void BeginPlay() override;
 
@@ -28,30 +27,29 @@ public:
         FActorComponentTickFunction* ThisTickFunction) override;
 
     /** Push or pull spring arm step. Increse camera zoom speed */
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spring Arm Control", meta = (ClampMin = "10", ClampMax = "100", UIMin = "10", UIMax = "100"))
-    float PushOrPullArmStep = 80;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spring Arm Control", meta = (ClampMin = "0.01", ClampMax = "1", UIMin = "0.01", UIMax = "1"))
+    float ZoomCameraStep = 0.01;
 
     /** Push or pull spring arm Interpolation speed */
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spring Arm Control", meta = (ClampMin = "0", ClampMax = "10", UIMin = "0", UIMax = "10"))
-    float InterpolationSpeed = 5;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spring Arm Control", meta = (ClampMin = "0", ClampMax = "5", UIMin = "0", UIMax = "5"))
+    float ZoomInterpolationSpeed = 5;
 
     /** Max camera distance to character */
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spring Arm Control")
-    float MaxCameraDistanceToCharacter = 2000;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spring Arm Control", meta = (ClampMin = "1000", ClampMax = "5000", UIMin = "1000", UIMax = "5000"))
+    float MaxZoomDistance = 2000;
 
     /** Min camera distance to character */
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spring Arm Control")
-    float MinCameraDistanceToCharacter = 100;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spring Arm Control", meta = (ClampMin = "100", ClampMax = "3000", UIMin = "100", UIMax = "3000"))
+    float MinZoomDistance = 200;
+
+    /** Camera distance to pawn from 0 to 1 */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spring Arm Control", meta = (ClampMin = "0", ClampMax = "1", UIMin = "0", UIMax = "1"))
+    float CameraZoom = 0;
 
 private:
-    float TargetArmLengthStartDistance;
-    float NewTargetArmLengthDistance;
+    float PreviousDistance = 0;
     // from 0.0 to 1;
-    float LerpTargetArmLengthTimerAlpha;
-    // Array with all player saved inputs
-    TArray<float> ZoomSequence;
     FTimerDelegate InterpolateTargetArmLengthDelegate;
-    FTimerHandle InterpolateTargetArmLengthTimer;
+    FTimerHandle ZoomTimerHandler;
     FTimerManager* TimerManager;
-	
 };

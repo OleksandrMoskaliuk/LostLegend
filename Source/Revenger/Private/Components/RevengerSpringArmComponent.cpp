@@ -3,23 +3,19 @@
 #include "Components/RevengerSpringArmComponent.h"
 
 // Push value to array for processing arm length
-void URevengerSpringArmComponent::PullOrPush(float Value)
+// Value resonable range from -1 to 1;
+void URevengerSpringArmComponent::ZoomCamera(float Value)
 {
-    // GEngine->AddOnScreenDebugMessage(-134, 3.f, FColor::White, "Elements = " + FString::SanitizeFloat(ZoomSequence.Num()));
-    ZoomSequence.Push(Value);
-    if (TimerManager && !(TimerManager->IsTimerActive(InterpolateTargetArmLengthTimer))) {
-        TimerManager->ClearTimer(InterpolateTargetArmLengthTimer);
-        TimerManager->SetTimer(InterpolateTargetArmLengthTimer,
-            InterpolateTargetArmLengthDelegate, 0.010f, true);
-    } 
+    CameraZoom = FMath::Clamp(CameraZoom + (Value * ZoomCameraStep * -1.f), 0.f, 1.f);
+    if (TimerManager && !(TimerManager->IsTimerActive(ZoomTimerHandler))) {
+        TimerManager->ClearTimer(ZoomTimerHandler);
+        TimerManager->SetTimer(ZoomTimerHandler,
+            InterpolateTargetArmLengthDelegate, 0.015f, true);
+    }
 }
 
 URevengerSpringArmComponent::URevengerSpringArmComponent()
-    : TargetArmLengthStartDistance(0.f)
-    , NewTargetArmLengthDistance(0.f)
-    , LerpTargetArmLengthTimerAlpha(0.f)
 {
-    PrimaryComponentTick.bCanEverTick = true;
     TimerManager = nullptr;
 }
 
@@ -27,35 +23,29 @@ void URevengerSpringArmComponent::BeginPlay()
 {
     Super::BeginPlay();
     TimerManager = &(GetWorld()->GetTimerManager());
-    // Only work through delegate
+
     InterpolateTargetArmLengthDelegate.BindUFunction(
         this, "InterpolateTargetArmLengthHandler");
-    TargetArmLengthStartDistance = this->TargetArmLength;
-    NewTargetArmLengthDistance = this->TargetArmLength;
+
+    // Calculate initial CameraZoom based on initial TargetArmLength
+    float InitialTargetArmLength = this->TargetArmLength;
+    CameraZoom = FMath::GetMappedRangeValueClamped(FVector2D(MinZoomDistance, MaxZoomDistance), FVector2D(0.0f, 1.0f), InitialTargetArmLength);
 }
 
 void URevengerSpringArmComponent::InterpolateTargetArmLengthHandler()
 {
-    if (LerpTargetArmLengthTimerAlpha >= 0.99f && ZoomSequence.Num() == 0) {
-        TimerManager->ClearTimer(InterpolateTargetArmLengthTimer);
-        return;
-    }
+    PreviousDistance = this->TargetArmLength;
+    float DeltaTime = GetWorld()->GetDeltaSeconds();
+    float From = this->TargetArmLength;
+    float To = FMath::Lerp(MinZoomDistance, MaxZoomDistance,
+        CameraZoom);
+    this->TargetArmLength = FMath::Lerp(From, To,
+        ZoomInterpolationSpeed * DeltaTime);
 
-    if (LerpTargetArmLengthTimerAlpha >= 0.99f && ZoomSequence.Num() > 0) {
-        LerpTargetArmLengthTimerAlpha = 0.f;
-        float From = this->TargetArmLength;
-        float To = this->TargetArmLength + (PushOrPullArmStep * -ZoomSequence.Pop());
-        TargetArmLengthStartDistance = From;
-        NewTargetArmLengthDistance = To;
-        return;
-    }
-
-    if (LerpTargetArmLengthTimerAlpha < 0.99f) {
-        NewTargetArmLengthDistance = FMath::Clamp(NewTargetArmLengthDistance, MinCameraDistanceToCharacter, MaxCameraDistanceToCharacter);
-        this->TargetArmLength = FMath::Lerp(TargetArmLengthStartDistance, NewTargetArmLengthDistance,
-            LerpTargetArmLengthTimerAlpha);
-        LerpTargetArmLengthTimerAlpha += InterpolationSpeed * GetWorld()->GetDeltaSeconds();
-        return;
+    // Stop timer if distance is same as in previous time
+    GEngine->AddOnScreenDebugMessage(1432, 1.f, FColor::Red, "InterpolateTargetArmLengthHandler works!");
+    if (FMath::IsNearlyEqual(PreviousDistance, TargetArmLength, KINDA_SMALL_NUMBER)) {
+        TimerManager->ClearTimer(ZoomTimerHandler);
     }
 }
 
