@@ -43,7 +43,6 @@ void URevengerSpringArmComponent::InterpolateTargetArmLengthHandler()
         ZoomInterpolationSpeed * DeltaTime);
 
     // Stop timer if distance is same as in previous time
-    GEngine->AddOnScreenDebugMessage(1432, 1.f, FColor::Red, "InterpolateTargetArmLengthHandler works!");
     if (FMath::IsNearlyEqual(PreviousDistance, TargetArmLength, KINDA_SMALL_NUMBER)) {
         TimerManager->ClearTimer(ZoomTimerHandler);
     }

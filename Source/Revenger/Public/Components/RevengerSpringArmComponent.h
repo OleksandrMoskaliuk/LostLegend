@@ -28,11 +28,11 @@ public:
 
     /** Push or pull spring arm step. Increse camera zoom speed */
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spring Arm Control", meta = (ClampMin = "0.01", ClampMax = "1", UIMin = "0.01", UIMax = "1"))
-    float ZoomCameraStep = 0.01;
+    float ZoomCameraStep = 0.1;
 
     /** Push or pull spring arm Interpolation speed */
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spring Arm Control", meta = (ClampMin = "0", ClampMax = "5", UIMin = "0", UIMax = "5"))
-    float ZoomInterpolationSpeed = 5;
+    float ZoomInterpolationSpeed = 1;
 
     /** Max camera distance to character */
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spring Arm Control", meta = (ClampMin = "1000", ClampMax = "5000", UIMin = "1000", UIMax = "5000"))
