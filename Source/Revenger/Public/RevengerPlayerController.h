@@ -44,25 +44,35 @@ public:
         meta = (AllowPrivateAccess = "true"))
     UInputAction* SetCameraZoomAction;
 
-    /** Control top down camera zoom */
+    /** Move camera using forward vector */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input,
         meta = (AllowPrivateAccess = "true"))
     UInputAction* MoveCameraUpAction;
 
-    /** Control top down camera zoom */
+    /** Move camera using negative forward vector  */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input,
         meta = (AllowPrivateAccess = "true"))
     UInputAction* MoveCameraDownAction;
 
-    /** Control top down camera zoom */
+    /** Move camera using negative right vector  */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input,
         meta = (AllowPrivateAccess = "true"))
     UInputAction* MoveCameraLeftAction;
 
-    /** Control top down camera zoom */
+    /** Move camera using right vector  */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input,
         meta = (AllowPrivateAccess = "true"))
     UInputAction* MoveCameraRightAction;
+
+    /** Roatate camera */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input,
+        meta = (AllowPrivateAccess = "true"))
+    UInputAction* RotateCameraRightAction;
+
+    /** Roatate camera */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input,
+        meta = (AllowPrivateAccess = "true"))
+    UInputAction* RotateCameraLeftAction;
 
     virtual void Tick(float DeltaTime) override;
 
@@ -86,6 +96,8 @@ protected:
     void OnMoveCameraDown(const FInputActionValue& Value);
     void OnMoveCameraLeft(const FInputActionValue& Value);
     void OnMoveCameraRight(const FInputActionValue& Value);
+    void OnRotateCameraLeft(const FInputActionValue& Value);
+    void OnRotateCameraRight(const FInputActionValue& Value);
 
 private:
     void UpdateGoal();

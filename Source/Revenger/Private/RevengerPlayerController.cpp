@@ -75,11 +75,11 @@ void ARevengerPlayerController::SetupInputComponent()
         EnhancedInputComponent->BindAction(
             SetDestinationClickAction, ETriggerEvent::Canceled, this,
             &ARevengerPlayerController::OnSetDestinationReleased);
-        // Camera control
+        // Camera zoom
         EnhancedInputComponent->BindAction(
             SetCameraZoomAction, ETriggerEvent::Started, this,
             &ARevengerPlayerController::OnCameraZoom);
-
+        // Camera move
         EnhancedInputComponent->BindAction(
             MoveCameraUpAction, ETriggerEvent::Started, this,
             &ARevengerPlayerController::OnMoveCameraUp);
@@ -107,6 +107,20 @@ void ARevengerPlayerController::SetupInputComponent()
         EnhancedInputComponent->BindAction(
             MoveCameraRightAction, ETriggerEvent::Triggered, this,
             &ARevengerPlayerController::OnMoveCameraRight);
+        // Camera rotate
+         EnhancedInputComponent->BindAction(
+            RotateCameraLeftAction, ETriggerEvent::Started, this,
+            &ARevengerPlayerController::OnRotateCameraLeft);
+        EnhancedInputComponent->BindAction(
+             RotateCameraLeftAction, ETriggerEvent::Triggered, this,
+             &ARevengerPlayerController::OnRotateCameraLeft);
+
+         EnhancedInputComponent->BindAction(
+            RotateCameraRightAction, ETriggerEvent::Started, this,
+            &ARevengerPlayerController::OnRotateCameraRight);
+        EnhancedInputComponent->BindAction(
+             RotateCameraRightAction, ETriggerEvent::Triggered, this,
+             &ARevengerPlayerController::OnRotateCameraRight);
 
 
        
@@ -298,6 +312,52 @@ void ARevengerPlayerController::OnMoveCameraRight(const FInputActionValue& Value
 
                 // Set the new location with the same Z (height)
                 CameraComp->SetWorldLocation(FVector(NewLocation.X, NewLocation.Y, CameraComp->GetComponentLocation().Z));
+            }
+        }
+    }
+}
+
+void ARevengerPlayerController::OnRotateCameraLeft(const FInputActionValue& Value)
+{
+    if (APawn* ControlledPawn = GetPawn()) {
+        // Update goal for using move and other logick only when player idle
+        if (ARevengerCharacter* PlayerCharacter = Cast<ARevengerCharacter>(ControlledPawn)) {
+            if (UCameraComponent* CameraComp = PlayerCharacter->GetTopDownCameraComponent()) {
+
+                // Adjust the rotation amount based on your requirements
+                float RotationAmount = 100.0f * GetWorld()->GetDeltaSeconds(); // Adjust this value as needed
+
+                // Get the rotation of the camera
+                FRotator CompRotator = CameraComp->GetComponentRotation();
+
+                // Rotate the camera left
+                FRotator NewRotation = CompRotator + FRotator(0.0f, -RotationAmount, 0.0f);
+
+                // Set the new rotation with the same Z (height)
+                CameraComp->SetWorldRotation(FRotator(NewRotation.Pitch, NewRotation.Yaw, CameraComp->GetComponentRotation().Roll));
+            }
+        }
+    }
+}
+
+void ARevengerPlayerController::OnRotateCameraRight(const FInputActionValue& Value)
+{
+    if (APawn* ControlledPawn = GetPawn()) {
+        // Update goal for using move and other logick only when player idle
+        if (ARevengerCharacter* PlayerCharacter = Cast<ARevengerCharacter>(ControlledPawn)) {
+            if (UCameraComponent* CameraComp = PlayerCharacter->GetTopDownCameraComponent()) {
+
+                // Adjust the rotation amount based on your requirements
+                float RotationAmount = 100.0f * GetWorld()->GetDeltaSeconds(); // Adjust this value as needed
+
+                // Get the rotation of the camera
+                FRotator CompRotator = CameraComp->GetComponentRotation();
+
+                // Rotate the camera right
+                FRotator NewRotation = CompRotator + FRotator(0.0f, RotationAmount, 0.0f);
+
+                // Set the new rotation with the same Z (height)
+                CameraComp->SetWorldRotation(FRotator(NewRotation.Pitch, NewRotation.Yaw, CameraComp->GetComponentRotation().Roll));
             }
         }
     }
