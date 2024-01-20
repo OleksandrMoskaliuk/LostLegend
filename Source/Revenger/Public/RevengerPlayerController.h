@@ -12,15 +12,22 @@ class UNiagaraSystem;
 class UInputMappingContext;
 class UInputAction;
 class ARevengerGameModeBase;
+class ARevengerCameraPawn;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
 UCLASS()
 class REVENGER_API ARevengerPlayerController : public APlayerController {
+
     GENERATED_BODY()
 
 public:
     ARevengerPlayerController();
+
+    /** RTS camera */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Classes,
+        meta = (AllowPrivateAccess = "true"))
+    TSubclassOf<ARevengerCameraPawn> RTS_CameraPawn;
 
     /** Time Threshold to know if it was a short press */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
@@ -104,6 +111,7 @@ private:
     void UpdateGoal();
     void RotateToGoal(const FVector GoalLocation, float DeltaTime);
     void MoveToGoal();
+    void SpawnRTSCamera();
 
     // Root motion related
     // Move to first goal while distance substract
@@ -114,5 +122,7 @@ private:
     bool bNewGoal;
     float FollowTime; // For how long it has been pressed
     float StateTransitionTime;
-    ARevengerGameModeBase* RevengerGameMode;
+    // Pawns
+    APawn* DefaultPawn;
+    ARevengerCameraPawn* CameraPawn;
 };

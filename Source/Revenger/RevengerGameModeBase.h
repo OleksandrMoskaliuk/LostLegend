@@ -6,8 +6,6 @@
 #include "GameFramework/GameModeBase.h"
 #include "RevengerGameModeBase.generated.h"
 
-class ARevengerCameraPawn;
-
 /**
  *
  */
@@ -18,22 +16,6 @@ class REVENGER_API ARevengerGameModeBase : public AGameModeBase {
 public:
     ARevengerGameModeBase();
 
-private:
-    /** RTS camera */
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Classes,
-        meta = (AllowPrivateAccess = "true"))
-    TSubclassOf<ARevengerCameraPawn> RTS_CameraPawn;
+    void StartPlay() override;
 
-public:
-
-    virtual void StartPlay() override;
-
-    FORCEINLINE class APawn* Get_RTS_CameraPawn() const
-    {
-        return CameraPawn;
-    }
-
-private:
-    void SpawnSecondPawn();
-    APawn * CameraPawn;
 };
