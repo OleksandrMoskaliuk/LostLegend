@@ -11,6 +11,7 @@
 class UNiagaraSystem;
 class UInputMappingContext;
 class UInputAction;
+class ARevengerGameModeBase;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
@@ -113,4 +114,5 @@ private:
     bool bNewGoal;
     float FollowTime; // For how long it has been pressed
     float StateTransitionTime;
+    ARevengerGameModeBase* RevengerGameMode;
 };

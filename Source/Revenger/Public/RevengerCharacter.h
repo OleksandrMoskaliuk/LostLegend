@@ -18,25 +18,10 @@ public:
     // Sets default values for this character's properties
     ARevengerCharacter();
 
-private:
-    /** Top down camera */
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera,
-        meta = (AllowPrivateAccess = "true"))
-    class URevengerCameraComponent* TopDownCameraComponent;
-
-    /** Camera boom positioning the camera above the character */
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera,
-        meta = (AllowPrivateAccess = "true"))
-    class URevengerSpringArmComponent* CameraBoom;
-
 public:
     /** Current player state */
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = State)
     ECharacterState CharacterState;
-
-    /** Player speed */
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement)
-    float GroundSpeed;
 
     /** Minimal Distance to move */
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Movement)
@@ -62,14 +47,4 @@ public:
     virtual void SetupPlayerInputComponent(
         class UInputComponent* PlayerInputComponent) override;
 
-    /** Returns TopDownCameraComponent subobject **/
-    FORCEINLINE class URevengerCameraComponent* GetTopDownCameraComponent() const
-    {
-        return TopDownCameraComponent;
-    }
-    /** Returns CameraBoom subobject **/
-    FORCEINLINE class URevengerSpringArmComponent* GetCameraBoom() const
-    {
-        return CameraBoom;
-    }
 };

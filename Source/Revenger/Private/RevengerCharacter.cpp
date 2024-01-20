@@ -10,8 +10,6 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Materials/Material.h"
 #include "UObject/ConstructorHelpers.h"
-#include "Components/RevengerSpringArmComponent.h"
-#include "Components/RevengerCameraComponent.h"
 
 // get game mode
 // #include "Kismet/GameplayStatics.h"
@@ -41,26 +39,7 @@ ARevengerCharacter::ARevengerCharacter()
     GetCharacterMovement()->bConstrainToPlane = true;
     GetCharacterMovement()->bSnapToPlaneAtStart = true;
 
-    // Create a camera boom...
-    CameraBoom = CreateDefaultSubobject<URevengerSpringArmComponent>(TEXT("CameraBoom"));
-    CameraBoom->SetupAttachment(RootComponent);
-    CameraBoom->SetUsingAbsoluteRotation(
-        true); // Don't want arm to rotate when character does
-    CameraBoom->TargetArmLength = 800.f;
-    CameraBoom->SetRelativeRotation(FRotator(-60.f, 0.f, 0.f));
-    CameraBoom->bDoCollisionTest = false; // Don't want to pull camera in when it collides with level
-
-    // Create a camera...
-    TopDownCameraComponent = CreateDefaultSubobject<URevengerCameraComponent>(TEXT("TopDownCamera"));
-    TopDownCameraComponent->SetupAttachment(CameraBoom,
-        USpringArmComponent::SocketName);
-    TopDownCameraComponent->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
-
-    // Activate ticking in order to update the cursor every frame.
-    PrimaryActorTick.bCanEverTick = true;
-    PrimaryActorTick.bStartWithTickEnabled = true;
     // Movement
-    GroundSpeed = 0.f;
     MovingRotationSpeed = 50;
     CharacterState = ECharacterState::IDLE;
     MinimalDistanceToMove = 10.f;

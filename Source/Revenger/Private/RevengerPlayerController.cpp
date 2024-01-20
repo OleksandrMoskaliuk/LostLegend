@@ -13,6 +13,8 @@
 #include "RevengerCharacter.h"
 // vectors calculation
 #include "Kismet/KismetMathLibrary.h"
+// Get GameMode instance
+#include "Kismet/GameplayStatics.h"
 // Find path
 #include "GameFramework/PawnMovementComponent.h"
 #include "NavigationPath.h"
@@ -20,6 +22,7 @@
 // Handle camera movement
 #include "Components/RevengerSpringArmComponent.h"
 #include "Components/RevengerCameraComponent.h"
+#include "Revenger/RevengerGameModeBase.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -44,6 +47,8 @@ void ARevengerPlayerController::BeginPlay()
             GetLocalPlayer())) {
         Subsystem->AddMappingContext(DefaultMappingContext, 0);
     }
+    // Get GameMode 
+    RevengerGameMode = Cast<ARevengerGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()));
 }
 
 void ARevengerPlayerController::Tick(float DeltaTime)
@@ -137,6 +142,12 @@ void ARevengerPlayerController::SetupInputComponent()
 
 void ARevengerPlayerController::OnInputStarted()
 {
+    if (RevengerGameMode) 
+    {
+
+      Possess(RevengerGameMode->Get_RTS_CameraPawn());
+        
+    }
   // TO DO: Stop prevoius movement using this function
 }
 
@@ -212,10 +223,10 @@ void ARevengerPlayerController::OnCameraZoom(const FInputActionValue& Value)
         // Update goal for using move and other logick only when player idle
         if (ARevengerCharacter* PlayerCharacter = Cast<ARevengerCharacter>(ControlledPawn)) 
         {
-            if (URevengerSpringArmComponent* SpringArm = PlayerCharacter->GetCameraBoom()) 
+           /* if (URevengerSpringArmComponent* SpringArm = PlayerCharacter->GetCameraBoom()) 
             {
                 SpringArm->PullOrPush(Value.Get<float>());
-            }
+            }*/
             
         }
     }
@@ -226,21 +237,21 @@ void ARevengerPlayerController::OnMoveCameraForward(const FInputActionValue& Val
     if (APawn* ControlledPawn = GetPawn()) {
         // Update goal for using move and other logick only when player idle
         if (ARevengerCharacter* PlayerCharacter = Cast<ARevengerCharacter>(ControlledPawn)) {
-            if (UCameraComponent* CameraComp = PlayerCharacter->GetTopDownCameraComponent()) {
-                GEngine->AddOnScreenDebugMessage(4255, 0.5f, FColor::Red, "MoveCameraUp");
+            //if (UCameraComponent* CameraComp = PlayerCharacter->GetTopDownCameraComponent()) {
+            //    GEngine->AddOnScreenDebugMessage(4255, 0.5f, FColor::Red, "MoveCameraUp");
 
-                 // Adjust the movement amount based on your requirements
-                float ForwardMovementAmount = 2000.0f * GetWorld()->GetDeltaSeconds();
+            //     // Adjust the movement amount based on your requirements
+            //    float ForwardMovementAmount = 2000.0f * GetWorld()->GetDeltaSeconds();
 
-                // Get the forward vector of the camera
-                FVector ForwardVector = CameraComp->GetForwardVector();
+            //    // Get the forward vector of the camera
+            //    FVector ForwardVector = CameraComp->GetForwardVector();
 
-                // Move the camera forward along its current facing direction
-                FVector NewLocation = CameraComp->GetComponentLocation() + ForwardVector * ForwardMovementAmount;
+            //    // Move the camera forward along its current facing direction
+            //    FVector NewLocation = CameraComp->GetComponentLocation() + ForwardVector * ForwardMovementAmount;
 
-                // Set the new location with the same Z (height)
-                CameraComp->SetWorldLocation(FVector(NewLocation.X, NewLocation.Y, CameraComp->GetComponentLocation().Z));
-            }
+            //    // Set the new location with the same Z (height)
+            //    CameraComp->SetWorldLocation(FVector(NewLocation.X, NewLocation.Y, CameraComp->GetComponentLocation().Z));
+            //}
         }
     }
 }
@@ -251,20 +262,20 @@ void ARevengerPlayerController::OnMoveCameraBackward(const FInputActionValue& Va
     if (APawn* ControlledPawn = GetPawn()) {
         // Update goal for using move and other logick only when player idle
         if (ARevengerCharacter* PlayerCharacter = Cast<ARevengerCharacter>(ControlledPawn)) {
-            if (URevengerCameraComponent* CameraComp = PlayerCharacter->GetTopDownCameraComponent()) {
+            //if (URevengerCameraComponent* CameraComp = PlayerCharacter->GetTopDownCameraComponent()) {
 
-                // Adjust the movement amount based on your requirements
-                float ForwardMovementAmount = 2000.0f * GetWorld()->GetDeltaSeconds();
+            //    // Adjust the movement amount based on your requirements
+            //    float ForwardMovementAmount = 2000.0f * GetWorld()->GetDeltaSeconds();
 
-                // Get the forward vector of the camera
-                FVector ForwardVector = -CameraComp->GetForwardVector();
+            //    // Get the forward vector of the camera
+            //    FVector ForwardVector = -CameraComp->GetForwardVector();
 
-                // Move the camera forward along its current facing direction
-                FVector NewLocation = CameraComp->GetComponentLocation() + ForwardVector * ForwardMovementAmount;
+            //    // Move the camera forward along its current facing direction
+            //    FVector NewLocation = CameraComp->GetComponentLocation() + ForwardVector * ForwardMovementAmount;
 
-                // Set the new location with the same Z (height)
-                CameraComp->SetWorldLocation(FVector(NewLocation.X, NewLocation.Y, CameraComp->GetComponentLocation().Z));
-            }
+            //    // Set the new location with the same Z (height)
+            //    CameraComp->SetWorldLocation(FVector(NewLocation.X, NewLocation.Y, CameraComp->GetComponentLocation().Z));
+            //}
         }
     }
 }
@@ -275,20 +286,20 @@ void ARevengerPlayerController::OnMoveCameraLeft(const FInputActionValue& Value)
     if (APawn* ControlledPawn = GetPawn()) {
         // Update goal for using move and other logick only when player idle
         if (ARevengerCharacter* PlayerCharacter = Cast<ARevengerCharacter>(ControlledPawn)) {
-            if (URevengerCameraComponent* CameraComp = PlayerCharacter->GetTopDownCameraComponent()) {
+            //if (URevengerCameraComponent* CameraComp = PlayerCharacter->GetTopDownCameraComponent()) {
 
-                // Adjust the movement amount based on your requirements
-                float ForwardMovementAmount = 1000.0f * GetWorld()->GetDeltaSeconds();
+            //    // Adjust the movement amount based on your requirements
+            //    float ForwardMovementAmount = 1000.0f * GetWorld()->GetDeltaSeconds();
 
-                // Get the forward vector of the camera
-                FVector ForwardVector = -CameraComp->GetRightVector();
+            //    // Get the forward vector of the camera
+            //    FVector ForwardVector = -CameraComp->GetRightVector();
 
-                // Move the camera forward along its current facing direction
-                FVector NewLocation = CameraComp->GetComponentLocation() + ForwardVector * ForwardMovementAmount;
+            //    // Move the camera forward along its current facing direction
+            //    FVector NewLocation = CameraComp->GetComponentLocation() + ForwardVector * ForwardMovementAmount;
 
-                // Set the new location with the same Z (height)
-                CameraComp->SetWorldLocation(FVector(NewLocation.X, NewLocation.Y, CameraComp->GetComponentLocation().Z));
-            }
+            //    // Set the new location with the same Z (height)
+            //    CameraComp->SetWorldLocation(FVector(NewLocation.X, NewLocation.Y, CameraComp->GetComponentLocation().Z));
+            //}
         }
     }
 }
@@ -299,20 +310,20 @@ void ARevengerPlayerController::OnMoveCameraRight(const FInputActionValue& Value
     if (APawn* ControlledPawn = GetPawn()) {
         // Update goal for using move and other logick only when player idle
         if (ARevengerCharacter* PlayerCharacter = Cast<ARevengerCharacter>(ControlledPawn)) {
-            if (URevengerCameraComponent* CameraComp = PlayerCharacter->GetTopDownCameraComponent()) {
+            //if (URevengerCameraComponent* CameraComp = PlayerCharacter->GetTopDownCameraComponent()) {
 
-                // Adjust the movement amount based on your requirements
-                float ForwardMovementAmount = 1000.0f * GetWorld()->GetDeltaSeconds();
+            //    // Adjust the movement amount based on your requirements
+            //    float ForwardMovementAmount = 1000.0f * GetWorld()->GetDeltaSeconds();
 
-                // Get the forward vector of the camera
-                FVector ForwardVector = CameraComp->GetRightVector();
+            //    // Get the forward vector of the camera
+            //    FVector ForwardVector = CameraComp->GetRightVector();
 
-                // Move the camera forward along its current facing direction
-                FVector NewLocation = CameraComp->GetComponentLocation() + ForwardVector * ForwardMovementAmount;
+            //    // Move the camera forward along its current facing direction
+            //    FVector NewLocation = CameraComp->GetComponentLocation() + ForwardVector * ForwardMovementAmount;
 
-                // Set the new location with the same Z (height)
-                CameraComp->SetWorldLocation(FVector(NewLocation.X, NewLocation.Y, CameraComp->GetComponentLocation().Z));
-            }
+            //    // Set the new location with the same Z (height)
+            //    CameraComp->SetWorldLocation(FVector(NewLocation.X, NewLocation.Y, CameraComp->GetComponentLocation().Z));
+            //}
         }
     }
 }
@@ -322,20 +333,20 @@ void ARevengerPlayerController::OnRotateCameraLeft(const FInputActionValue& Valu
     if (APawn* ControlledPawn = GetPawn()) {
         // Update goal for using move and other logick only when player idle
         if (ARevengerCharacter* PlayerCharacter = Cast<ARevengerCharacter>(ControlledPawn)) {
-            if (URevengerCameraComponent* CameraComp = PlayerCharacter->GetTopDownCameraComponent()) {
+            //if (URevengerCameraComponent* CameraComp = PlayerCharacter->GetTopDownCameraComponent()) {
 
-                // Adjust the rotation amount based on your requirements
-                float RotationAmount = 100.0f * GetWorld()->GetDeltaSeconds(); // Adjust this value as needed
+            //    // Adjust the rotation amount based on your requirements
+            //    float RotationAmount = 100.0f * GetWorld()->GetDeltaSeconds(); // Adjust this value as needed
 
-                // Get the rotation of the camera
-                FRotator CompRotator = CameraComp->GetComponentRotation();
+            //    // Get the rotation of the camera
+            //    FRotator CompRotator = CameraComp->GetComponentRotation();
 
-                // Rotate the camera left
-                FRotator NewRotation = CompRotator + FRotator(0.0f, -RotationAmount, 0.0f);
+            //    // Rotate the camera left
+            //    FRotator NewRotation = CompRotator + FRotator(0.0f, -RotationAmount, 0.0f);
 
-                // Set the new rotation with the same Z (height)
-                CameraComp->SetWorldRotation(FRotator(NewRotation.Pitch, NewRotation.Yaw, CameraComp->GetComponentRotation().Roll));
-            }
+            //    // Set the new rotation with the same Z (height)
+            //    CameraComp->SetWorldRotation(FRotator(NewRotation.Pitch, NewRotation.Yaw, CameraComp->GetComponentRotation().Roll));
+            //}
         }
     }
 }
@@ -345,20 +356,20 @@ void ARevengerPlayerController::OnRotateCameraRight(const FInputActionValue& Val
     if (APawn* ControlledPawn = GetPawn()) {
         // Update goal for using move and other logick only when player idle
         if (ARevengerCharacter* PlayerCharacter = Cast<ARevengerCharacter>(ControlledPawn)) {
-            if (URevengerCameraComponent* CameraComp = PlayerCharacter->GetTopDownCameraComponent()) {
+            //if (URevengerCameraComponent* CameraComp = PlayerCharacter->GetTopDownCameraComponent()) {
 
-                // Adjust the rotation amount based on your requirements
-                float RotationAmount = 100.0f * GetWorld()->GetDeltaSeconds(); // Adjust this value as needed
+            //    // Adjust the rotation amount based on your requirements
+            //    float RotationAmount = 100.0f * GetWorld()->GetDeltaSeconds(); // Adjust this value as needed
 
-                // Get the rotation of the camera
-                FRotator CompRotator = CameraComp->GetComponentRotation();
+            //    // Get the rotation of the camera
+            //    FRotator CompRotator = CameraComp->GetComponentRotation();
 
-                // Rotate the camera right
-                FRotator NewRotation = CompRotator + FRotator(0.0f, RotationAmount, 0.0f);
+            //    // Rotate the camera right
+            //    FRotator NewRotation = CompRotator + FRotator(0.0f, RotationAmount, 0.0f);
 
-                // Set the new rotation with the same Z (height)
-                CameraComp->SetWorldRotation(FRotator(NewRotation.Pitch, NewRotation.Yaw, CameraComp->GetComponentRotation().Roll));
-            }
+            //    // Set the new rotation with the same Z (height)
+            //    CameraComp->SetWorldRotation(FRotator(NewRotation.Pitch, NewRotation.Yaw, CameraComp->GetComponentRotation().Roll));
+            //}
         }
     }
 }
