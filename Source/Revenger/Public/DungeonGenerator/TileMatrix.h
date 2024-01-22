@@ -74,6 +74,13 @@ public:
 	void CreateRooms(int32 RoomCount);
 
 	/**
+         * Will try to create Strat room in the tilemap.
+         * @param Rows - max rows to generate
+									* @param Columns - max columns to generate
+         */
+	void CreateStartRoom(int16 Rows, int16 Columns);
+
+	/**
 	 * Prints the generated Tile Map in the console
 	 */
 	void PrintDebugTileMap() const;

@@ -40,6 +40,18 @@ struct FRoomTemplate : public FTableRowBase {
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RoomTemplate")
     UStaticMesh* WallMesh;
 
+     /**
+     * Same functionality as FloorPivotOffset - check comments in Source Code or In-Editor Details Panel!
+     */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RoomTemplate")
+    UMaterialInterface* RoomPillarMeshMaterialOverride;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RoomTemplate")
+    FVector PillarPivotOffset;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RoomTemplate")
+    UStaticMesh* PillarMesh;
+
     /**
      * Used to replace default material of WallMesh
      * Check RoomTileMeshMaterialOverride docs for more info
@@ -102,6 +114,15 @@ private:
      * Assumes the data table contains correct values in terms of mesh sizes etc.
      */
     void SpawnDungeonFromDataTable();
+
+
+    // TO DO: complete implementation
+    void SpawnDungeonFurnitureFromDataTable();
+
+    // Helper function to calculate the center of a room
+    FVector GetRoomCenter(const FTileMatrix::FRoom& Room) const;
+
+    bool IsPointCloseToWall(const FVector& Point, const TArray<FTileMatrix::FWallSpawnPoint>& WallSpawnPoints, bool bIsWallFacingX, FVector& OutModifiedOffset, FRotator& OutRotation, bool& bShouldPlaceObject) const;
 
     /**
      * Spawns a generic dungeon using the same floor mesh and wall mesh for all the rooms/corridors

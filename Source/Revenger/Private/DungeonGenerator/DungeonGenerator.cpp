@@ -75,8 +75,11 @@ void ADungeonGenerator::SpawnDungeonFromDataTable()
             FRotator WallRotation = CalculateWallRotation(RoomTemplate.bIsWallFacingX, Rooms[i].WallSpawnPoints[j], RoomTemplate.WallMeshPivotOffset, WallModifiedOffset);
             FVector WallSpawnLocation = Rooms[i].WallSpawnPoints[j].WorldLocation + WallModifiedOffset;
             SpawnDungeonMesh(FTransform(WallRotation, WallSpawnLocation), RoomTemplate.WallMesh, RoomTemplate.WallMeshMaterialOverride);
+            
+            
         }
     }
+    
 
     // Get the 1st element of the data table to retrieve any pivot offsets
     // The 1st row of the data table will be used to create corridors connecting various spawned rooms
@@ -101,6 +104,94 @@ void ADungeonGenerator::SpawnDungeonFromDataTable()
 
         SpawnDungeonMesh(FTransform(WallRotation, WallSpawnPoint), CorridorWall);
     }
+
+}
+
+void ADungeonGenerator::SpawnDungeonFurnitureFromDataTable()
+{
+
+    TArray<FRoomTemplate*> RoomTemplates;
+    FString ContextStr;
+    RoomTemplatesDataTable->GetAllRows<FRoomTemplate>(ContextStr, RoomTemplates);
+
+    ensure(RoomTemplates.Num() > 0);
+
+    float DataTableFloorTileSize = CalculateFloorTileSize(*(*RoomTemplates[0]).RoomTileMesh);
+
+    TArray<FTileMatrix::FRoom> Rooms;
+    TArray<FVector> CorridorFloorTiles;
+    TArray<FTileMatrix::FWallSpawnPoint> CorridorWalls;
+    TileMatrix.ProjectTileMapLocationsToWorld(DataTableFloorTileSize, Rooms, CorridorFloorTiles, CorridorWalls);
+
+    // Iterate through rooms
+    for (int32 i = 0; i < Rooms.Num(); i++) {
+        FRoomTemplate RoomTemplate = *RoomTemplates[FMath::RandRange(0, RoomTemplates.Num() - 1)];
+
+        for (int32 j = 0; j < Rooms[i].FloorTileWorldLocations.Num(); j++) {
+            FVector WorldSpawnLocation = Rooms[i].FloorTileWorldLocations[j];
+
+            // Calculate offsets
+            FVector WallModifiedOffset;
+            FRotator WallRotation;
+            bool bShouldPlaceObject;
+
+            // Check if the point is close to a wall
+            if (IsPointCloseToWall(WorldSpawnLocation, Rooms[i].WallSpawnPoints, RoomTemplate.bIsWallFacingX, WallModifiedOffset, WallRotation, bShouldPlaceObject)) {
+                // Check if the object should be placed based on a random chance
+                if (bShouldPlaceObject) {
+                    // Add an additional offset for placing the object from the wall
+                    FVector ObjectPlacementOffset = FVector(50.0f, 0.0f, 0.0f); // Adjust this offset based on your requirements
+                    SpawnDungeonMesh(FTransform(WallRotation, WorldSpawnLocation + WallModifiedOffset + ObjectPlacementOffset), RoomTemplate.WallMesh, RoomTemplate.WallMeshMaterialOverride);
+                }
+            } else {
+                // Regular room tile placement
+                SpawnDungeonMesh(FTransform(FRotator::ZeroRotator, WorldSpawnLocation + RoomTemplate.PillarPivotOffset), RoomTemplate.PillarMesh, RoomTemplate.RoomPillarMeshMaterialOverride);
+            }
+        }
+    }
+
+}
+
+
+// Helper function to calculate the center of a room
+FVector ADungeonGenerator::GetRoomCenter(const FTileMatrix::FRoom& Room) const
+{
+    FVector Center = FVector::ZeroVector;
+
+    for (const FVector& Location : Room.FloorTileWorldLocations) {
+        Center += Location;
+    }
+
+    if (Room.FloorTileWorldLocations.Num() > 0) {
+        Center /= Room.FloorTileWorldLocations.Num();
+    }
+
+    return Center;
+}
+
+bool ADungeonGenerator::IsPointCloseToWall(const FVector& Point, const TArray<FTileMatrix::FWallSpawnPoint>& WallSpawnPoints, bool bIsWallFacingX, FVector& OutModifiedOffset, FRotator& OutRotation, bool& bShouldPlaceObject) const
+{
+    const float DistanceThreshold = 100.0f; // Adjust this based on your requirements
+    const float ObjectPlacementChance = 1.f; // Adjust this based on your desired chance
+
+    for (const FTileMatrix::FWallSpawnPoint& WallSpawnPoint : WallSpawnPoints) {
+        float Distance = FVector::Dist(Point, WallSpawnPoint.WorldLocation);
+
+        if (Distance < DistanceThreshold) {
+            // Point is close to a wall, calculate offsets and rotation
+            OutModifiedOffset = FVector(); // Add your offset calculation logic here
+            OutRotation = CalculateWallRotation(bIsWallFacingX, WallSpawnPoint, FVector::ZeroVector, OutModifiedOffset);
+
+            // Check if the object should be placed based on a random chance
+            bShouldPlaceObject = FMath::FRand() < ObjectPlacementChance;
+
+            return true;
+        }
+    }
+
+    // Point is not close to a wall
+    bShouldPlaceObject = true; // Object can be placed
+    return false;
 }
 
 void ADungeonGenerator::SpawnGenericDungeon(const TArray<FVector>& FloorTileLocations, const TArray<FTileMatrix::FWallSpawnPoint>& WallSpawnPoints)
@@ -210,6 +301,7 @@ void ADungeonGenerator::GenerateDungeon()
 
     if (RoomTemplatesDataTable) {
         SpawnDungeonFromDataTable();
+        SpawnDungeonFurnitureFromDataTable();
     } else {
         if (!FloorSM) {
             UE_LOG(DungeonGenerator, Warning, TEXT("Cannot generate dungeon"));
