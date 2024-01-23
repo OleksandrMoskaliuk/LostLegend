@@ -122,23 +122,53 @@ void ADungeonGenerator::SpawnDungeonFurnitureFromDataTable()
     TArray<FTileMatrix::FWallSpawnPoint> CorridorWalls;
     TileMatrix.ProjectTileMapLocationsToWorld(DataTableFloorTileSize, Rooms, CorridorFloorTiles, CorridorWalls);
 
-    // spawn door frame 
+    // spawn door frame and walls
     FRoomTemplate RoomTemplate0 = *RoomTemplates[FMath::RandRange(0, RoomTemplates.Num() - 1)];
-    float TreasholdDistance = 410;
+    float TreasholdDistance = 400.f + 10.f;
+    float TreasholdDistance2 = 565.f + 10.f; 
+    // Wall or Door points to spwan for all rooms
+    TArray<FVector> WallOrDoorsPoints;
     for (auto& corridor_pnt : CorridorFloorTiles) 
     {
         for (auto &Room : Rooms) 
         {
+            // Make array to hold point that can be walls or door frame 
             for (auto& room_pnt : Room.FloorTileWorldLocations) 
             {
                 if (FVector::DistXY(corridor_pnt, room_pnt) < TreasholdDistance) 
                 {
-                    AActor* act =  SpawnDungeonMesh(FTransform(FRotator::ZeroRotator, corridor_pnt + RoomTemplate0.PillarPivotOffset), RoomTemplate0.PillarMesh, RoomTemplate0.RoomPillarMeshMaterialOverride);
-                    FaceActorToPoint(act, room_pnt);
+                    WallOrDoorsPoints.Add(corridor_pnt);
                 }
             }
         }
     }
+    // Decide waht spawn wall or door frame
+    // Check if corridor point do not have more than 3 closer room tiles if so spawn wall else spawn door frame
+    for (const auto& room : Rooms) {
+        for (const auto& flor_pnt : room.FloorTileWorldLocations) {
+            int NeighborCoridorTile = 0;
+            FVector SpawnPoint = FVector::ZeroVector;
+            for (const auto& pnt : WallOrDoorsPoints) // for each room
+            {
+               
+                if (FVector::DistXY(pnt, flor_pnt) < TreasholdDistance) {
+                    SpawnPoint = pnt;
+                }
+                if (FVector::DistXY(pnt, flor_pnt) < TreasholdDistance2) {
+                    ++NeighborCoridorTile;
+                }
+            }
+            if (NeighborCoridorTile > 2 && SpawnPoint != FVector::ZeroVector) {
+                // spawn wall
+            } 
+            else {
+                // spwn door frame
+                AActor* act = SpawnDungeonMesh(FTransform(FRotator::ZeroRotator, SpawnPoint + RoomTemplate0.PillarPivotOffset), RoomTemplate0.PillarMesh, RoomTemplate0.RoomPillarMeshMaterialOverride);
+                FaceActorToPoint(act, SpawnPoint);
+            }
+        }
+    }
+
 
     // Iterate through rooms
     for (int32 i = 0; i < Rooms.Num(); i++) {
