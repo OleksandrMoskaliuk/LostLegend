@@ -119,10 +119,20 @@ private:
     // TO DO: complete implementation
     void SpawnDungeonFurnitureFromDataTable();
 
-    // Helper function to calculate the center of a room
-    FVector GetRoomCenter(const FTileMatrix::FRoom& Room) const;
+    FVector PushSpawnPointToCenter(FVector SpawnPoint, const TArray<FVector>& WallSpawnPoints);
 
-    bool IsPointCloseToWall(const FVector& Point, const TArray<FTileMatrix::FWallSpawnPoint>& WallSpawnPoints, bool bIsWallFacingX, FVector& OutModifiedOffset, FRotator& OutRotation, bool& bShouldPlaceObject) const;
+    // Make static mesh look to room center
+    void AlignActorWithWorld(AActor* Actor, const TArray<FVector>& WallSpawnPoints);
+
+    // Find four corners of room, Knowing this poits we can prevent spanw object, so they will not block player movement 
+    TArray<FVector> GetRoomPointsCloseToCornersLocatoin(TArray<FVector>& RoomPoints);
+
+    // Helper function to calculate the center of a room
+    FVector GetRoomCenter(const TArray<FVector>& RoomPoints) const;
+
+   bool IsPointCloseToWall(const FVector& Point, const TArray<FTileMatrix::FWallSpawnPoint>& WallSpawnPoints, bool bIsWallFacingX, FVector& OutModifiedOffset, FRotator& OutRotation, bool& bShouldPlaceObject) const;
+
+    bool IsPointInCorridor(const FVector& Point, const TArray<FTileMatrix::FWallSpawnPoint>& WallSpawnPoints) const;
 
     /**
      * Spawns a generic dungeon using the same floor mesh and wall mesh for all the rooms/corridors

@@ -109,7 +109,6 @@ void ADungeonGenerator::SpawnDungeonFromDataTable()
 
 void ADungeonGenerator::SpawnDungeonFurnitureFromDataTable()
 {
-
     TArray<FRoomTemplate*> RoomTemplates;
     FString ContextStr;
     RoomTemplatesDataTable->GetAllRows<FRoomTemplate>(ContextStr, RoomTemplates);
@@ -127,43 +126,229 @@ void ADungeonGenerator::SpawnDungeonFurnitureFromDataTable()
     for (int32 i = 0; i < Rooms.Num(); i++) {
         FRoomTemplate RoomTemplate = *RoomTemplates[FMath::RandRange(0, RoomTemplates.Num() - 1)];
 
-        for (int32 j = 0; j < Rooms[i].FloorTileWorldLocations.Num(); j++) {
-            FVector WorldSpawnLocation = Rooms[i].FloorTileWorldLocations[j];
+        TArray<FVector> FloorPoints;
 
+        for (int32 j = 0; j < Rooms[i].WallSpawnPoints.Num(); j++) {
+            // Use only wall spawn point for more precision spawn
+            FVector WorldSpawnLocation = Rooms[i].WallSpawnPoints[j].WorldLocation;
             // Calculate offsets
             FVector WallModifiedOffset;
             FRotator WallRotation;
-            bool bShouldPlaceObject;
-
-            // Check if the point is close to a wall
-            if (IsPointCloseToWall(WorldSpawnLocation, Rooms[i].WallSpawnPoints, RoomTemplate.bIsWallFacingX, WallModifiedOffset, WallRotation, bShouldPlaceObject)) {
-                // Check if the object should be placed based on a random chance
-                if (bShouldPlaceObject) {
-                    // Add an additional offset for placing the object from the wall
-                    FVector ObjectPlacementOffset = FVector(50.0f, 0.0f, 0.0f); // Adjust this offset based on your requirements
-                    SpawnDungeonMesh(FTransform(WallRotation, WorldSpawnLocation + WallModifiedOffset + ObjectPlacementOffset), RoomTemplate.WallMesh, RoomTemplate.WallMeshMaterialOverride);
+            bool bShouldPlaceObject = true;
+            FloorPoints.Add(WorldSpawnLocation);
+            if (false) {
+                // Check if the point is close to a wall
+                if (IsPointCloseToWall(WorldSpawnLocation, Rooms[i].WallSpawnPoints, RoomTemplate.bIsWallFacingX, WallModifiedOffset, WallRotation, bShouldPlaceObject)) {
+                    // Check if the object should be placed based on a random chance
+                    if (bShouldPlaceObject) {
+                        // Add an additional offset for placing the object from the wall
+                        FVector ObjectPlacementOffset = FVector(50.0f, 0.0f, 0.0f); // Adjust this offset based on your requirements
+                        SpawnDungeonMesh(FTransform(WallRotation, WorldSpawnLocation + WallModifiedOffset + ObjectPlacementOffset), RoomTemplate.WallMesh, RoomTemplate.WallMeshMaterialOverride);
+                    }
+                } else {
+                    // Regular room tile placement
+                    SpawnDungeonMesh(FTransform(FRotator::ZeroRotator, WorldSpawnLocation + RoomTemplate.PillarPivotOffset), RoomTemplate.PillarMesh, RoomTemplate.RoomPillarMeshMaterialOverride);
                 }
-            } else {
-                // Regular room tile placement
-                SpawnDungeonMesh(FTransform(FRotator::ZeroRotator, WorldSpawnLocation + RoomTemplate.PillarPivotOffset), RoomTemplate.PillarMesh, RoomTemplate.RoomPillarMeshMaterialOverride);
             }
         }
+        
+
+        // Spawn center, works as expected, Only if use wapp spawn poinats
+        if (false) 
+        {
+        SpawnDungeonMesh(FTransform(FRotator::ZeroRotator, GetRoomCenter(FloorPoints) +RoomTemplate.PillarPivotOffset), RoomTemplate.PillarMesh, RoomTemplate.RoomPillarMeshMaterialOverride);
+        FloorPoints.Empty();
+        }
+
+        if (true) 
+        {
+        TArray<FVector> CornersSpawnPoints = GetRoomPointsCloseToCornersLocatoin(FloorPoints);
+        for (int r = 0; r < FloorPoints.Num(); r++) {
+                if (0) {
+                    FVector SpawPnt = PushSpawnPointToCenter(FloorPoints[r], FloorPoints);
+                    AActor* Actor = SpawnDungeonMesh(FTransform(FRotator::ZeroRotator, SpawPnt + RoomTemplate.PillarPivotOffset),
+                        RoomTemplate.PillarMesh, RoomTemplate.RoomPillarMeshMaterialOverride);
+                    AlignActorWithWorld(Actor, FloorPoints);
+                }
+                bool CanSpawn = true;
+                for (auto& pnt : CornersSpawnPoints) {
+                    if (pnt.Equals(FloorPoints[r], 0.1)) {
+                        CanSpawn = false;
+                    }
+                }
+                if (CanSpawn) {
+                    FVector SpawPnt = PushSpawnPointToCenter(FloorPoints[r], FloorPoints);
+                    AActor* Actor = SpawnDungeonMesh(FTransform(FRotator::ZeroRotator, SpawPnt + RoomTemplate.PillarPivotOffset),
+                        RoomTemplate.PillarMesh, RoomTemplate.RoomPillarMeshMaterialOverride);
+                    AlignActorWithWorld(Actor, FloorPoints);
+                }
+        }
+        FloorPoints.Empty();
+        }
+
     }
 
 }
 
-
-// Helper function to calculate the center of a room
-FVector ADungeonGenerator::GetRoomCenter(const FTileMatrix::FRoom& Room) const
+TArray<FVector> ADungeonGenerator::GetRoomPointsCloseToCornersLocatoin(TArray<FVector>& RoomPoints)
 {
-    FVector Center = FVector::ZeroVector;
+    TArray<FVector> ResultPoints;
+    FVector RomCenter = GetRoomCenter(RoomPoints);
+    float MaxDistanceToCorner = 0;
+    // Find distances. Max distance will be equal corner point
+    for (auto& pnt : RoomPoints) {
+        float distance = FVector::DistSquaredXY(pnt, RomCenter);
+        if (distance > MaxDistanceToCorner) {
+        MaxDistanceToCorner = distance;
+        }
+    }
+    // Write 4 corners points
+    for (auto& pnt : RoomPoints) {
+        float distance = FVector::DistSquaredXY(pnt, RomCenter);
+        if ((int)distance >= (int)MaxDistanceToCorner) {
+        ResultPoints.Add(pnt);
+        }
+    }
+    // Find closest point to corner points
+    float DistanceThreashold = 200;
+    TArray<FVector> CloseToCornerPoints;
+    for (auto& crn : ResultPoints) {
+        for (auto& pnt : RoomPoints) {
+        float distance = FVector::DistSquaredXY(pnt, crn);
+        if (distance < DistanceThreashold) {
+                CloseToCornerPoints.Add(pnt);
+        }
+        }
+    }
+    // Merge Arrays
+    for (auto pnt : CloseToCornerPoints) {
+        ResultPoints.Add(pnt);
+    }
+    return ResultPoints;
+}
 
-    for (const FVector& Location : Room.FloorTileWorldLocations) {
-        Center += Location;
+void ADungeonGenerator::AlignActorWithWorld(AActor* Actor, const TArray<FVector>& WallSpawnPoints)
+{
+    if (!Actor || WallSpawnPoints.Num() == 0) {
+        // Ensure the actor and wall spawn points are valid
+        return;
     }
 
-    if (Room.FloorTileWorldLocations.Num() > 0) {
-        Center /= Room.FloorTileWorldLocations.Num();
+    // Find the closest wall to the actor
+    FVector ActorLocation = Actor->GetActorLocation();
+    FVector ClosestWallLocation;
+    float MinDistanceSquared = MAX_FLT;
+
+    for (const FVector& WallSpawnPoint : WallSpawnPoints) {
+        float DistanceSquared = FVector::DistSquared(ActorLocation, WallSpawnPoint);
+        if (DistanceSquared < MinDistanceSquared) {
+        MinDistanceSquared = DistanceSquared;
+        ClosestWallLocation = WallSpawnPoint;
+        }
+    }
+    
+    // Make actor looking to wall
+    FVector DirectionToWall = ActorLocation - GetRoomCenter(WallSpawnPoints);
+    FRotator NewRotation = DirectionToWall.Rotation();
+    // Rotate actotr to 180 degree
+    Actor->SetActorRotation(NewRotation - FRotator(0,180,0));
+
+    FRotator ActorRotation = Actor->GetActorRotation();
+
+    FRotator Left = FVector::LeftVector.Rotation();
+    float LeftAlignmentDegree = FQuat::FindBetweenNormals(ActorRotation.Vector(), Left.Vector()).GetAngle();
+
+    FRotator Right = FVector::RightVector.Rotation();
+    float RightAlignmentDegree = FQuat::FindBetweenNormals(ActorRotation.Vector(), Right.Vector()).GetAngle();
+
+    FRotator Forward = FVector::ForwardVector.Rotation();
+    float ForwardAlignmentDegree = FQuat::FindBetweenNormals(ActorRotation.Vector(), Forward.Vector()).GetAngle();
+
+    FRotator Backward = (-FVector::ForwardVector).Rotation();
+    float BackwardAlignmentDegree = FQuat::FindBetweenNormals(ActorRotation.Vector(), Backward.Vector()).GetAngle();
+
+    // Find the smallest alignment degree
+    float SmallestAlignmentDegree = LeftAlignmentDegree;
+    if (RightAlignmentDegree < SmallestAlignmentDegree) 
+    {
+        SmallestAlignmentDegree = RightAlignmentDegree;
+    }
+    if (ForwardAlignmentDegree < SmallestAlignmentDegree) 
+    {
+        SmallestAlignmentDegree = ForwardAlignmentDegree;
+    }
+    if (BackwardAlignmentDegree < SmallestAlignmentDegree) 
+    {
+        SmallestAlignmentDegree = BackwardAlignmentDegree;
+    }
+
+    // Set the actor's rotation based on the smallest alignment degree
+    if (SmallestAlignmentDegree == LeftAlignmentDegree) {
+        Actor->SetActorRotation(Left);
+    } else if (SmallestAlignmentDegree == RightAlignmentDegree) {
+        Actor->SetActorRotation(Right);
+    } else if (SmallestAlignmentDegree == ForwardAlignmentDegree) {
+        Actor->SetActorRotation(Forward);
+    } else if (SmallestAlignmentDegree == BackwardAlignmentDegree) {
+        Actor->SetActorRotation(Backward);
+    }
+}
+
+FVector ADungeonGenerator::PushSpawnPointToCenter(FVector SpawnPoint, const TArray<FVector>& WallSpawnPoints)
+{
+    if (WallSpawnPoints.Num() == 0) {
+        // Ensure the actor and wall spawn points are valid
+        return SpawnPoint;
+    }
+
+    // Find the closest wall to the actor
+    FVector ActorLocation = SpawnPoint;
+    FVector ClosestWallLocation;
+    float MinDistanceSquared = MAX_FLT;
+
+    for (const FVector& WallSpawnPoint : WallSpawnPoints) {
+        float DistanceSquared = FVector::DistSquared(ActorLocation, WallSpawnPoint);
+        if (DistanceSquared < MinDistanceSquared) {
+        MinDistanceSquared = DistanceSquared;
+        ClosestWallLocation = WallSpawnPoint;
+        }
+    }
+
+    // Calculate the direction vector from the actor to the center of the room
+    FVector DirectionToCenter = GetRoomCenter(WallSpawnPoints) - ActorLocation; // Replace 'CenterOfRoom' with the actual center of the room
+
+    // Project the direction vector onto the plane defined by the wall (remove the component perpendicular to the wall)
+    // DirectionToCenter -= FVector::DotProduct(DirectionToCenter, ClosestWallLocation) * ClosestWallLocation;
+
+    // Normalize the direction vector to get the movement direction
+    DirectionToCenter.Normalize();
+
+    // Set the new actor location
+    float PushDistance = 200.0f; // Adjust this value based on your requirements
+    FVector NewLocation = ActorLocation + DirectionToCenter * PushDistance;
+
+    return NewLocation;
+}
+
+// Helper function to calculate the center of a room
+FVector ADungeonGenerator::GetRoomCenter(const TArray<FVector>& RoomPoints) const
+{
+    if (RoomPoints.Num() == 0) {
+        return FVector::ZeroVector; // Return zero vector for an empty array
+    }
+
+    float MaxDistanceSquared = 0.0f;
+    FVector Center(0.0f, 0.0f, 0.0f);
+
+    // Find the pair of points with the maximum distance
+    for (int32 i = 0; i < RoomPoints.Num() - 1; ++i) {
+        for (int32 j = i + 1; j < RoomPoints.Num(); ++j) {
+            float DistanceSquared = FVector::DistSquared(RoomPoints[i], RoomPoints[j]);
+            if (DistanceSquared > MaxDistanceSquared) {
+                MaxDistanceSquared = DistanceSquared;
+                Center = (RoomPoints[i] + RoomPoints[j]) / 2.0f; // Midpoint of the pair
+            }
+        }
     }
 
     return Center;
@@ -171,13 +356,19 @@ FVector ADungeonGenerator::GetRoomCenter(const FTileMatrix::FRoom& Room) const
 
 bool ADungeonGenerator::IsPointCloseToWall(const FVector& Point, const TArray<FTileMatrix::FWallSpawnPoint>& WallSpawnPoints, bool bIsWallFacingX, FVector& OutModifiedOffset, FRotator& OutRotation, bool& bShouldPlaceObject) const
 {
-    const float DistanceThreshold = 100.0f; // Adjust this based on your requirements
-    const float ObjectPlacementChance = 1.f; // Adjust this based on your desired chance
+    const float DistanceThreshold = 200.0f; // Adjust this based on your requirements
+    const float ObjectPlacementChance = 0.1f; // Adjust this based on your desired chance
 
     for (const FTileMatrix::FWallSpawnPoint& WallSpawnPoint : WallSpawnPoints) {
         float Distance = FVector::Dist(Point, WallSpawnPoint.WorldLocation);
 
         if (Distance < DistanceThreshold) {
+            // Check if the point is in the corridor
+            if (IsPointInCorridor(Point, WallSpawnPoints)) {
+                bShouldPlaceObject = false; // Point is in the corridor, don't place object
+                return false;
+            }
+
             // Point is close to a wall, calculate offsets and rotation
             OutModifiedOffset = FVector(); // Add your offset calculation logic here
             OutRotation = CalculateWallRotation(bIsWallFacingX, WallSpawnPoint, FVector::ZeroVector, OutModifiedOffset);
@@ -192,6 +383,23 @@ bool ADungeonGenerator::IsPointCloseToWall(const FVector& Point, const TArray<FT
     // Point is not close to a wall
     bShouldPlaceObject = true; // Object can be placed
     return false;
+}
+
+// Function to check if a point is in the corridor
+bool ADungeonGenerator::IsPointInCorridor(const FVector& Point, const TArray<FTileMatrix::FWallSpawnPoint>& WallSpawnPoints) const
+{
+    // Choose a distance threshold for corridor detection
+    const float CorridorThreshold = 300.f;
+
+    for (const FTileMatrix::FWallSpawnPoint& WallSpawnPoint : WallSpawnPoints) {
+        float Distance = FVector::Dist(Point, WallSpawnPoint.WorldLocation);
+
+        if (Distance < CorridorThreshold) {
+            return true; // Point is in the corridor
+        }
+    }
+
+    return false; // Point is not in the corridor
 }
 
 void ADungeonGenerator::SpawnGenericDungeon(const TArray<FVector>& FloorTileLocations, const TArray<FTileMatrix::FWallSpawnPoint>& WallSpawnPoints)
