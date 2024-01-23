@@ -52,6 +52,12 @@ struct FRoomTemplate : public FTableRowBase {
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RoomTemplate")
     UStaticMesh* PillarMesh;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RoomTemplate Door")
+    FVector DoorPivotOffset;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RoomTemplate Door")
+    UStaticMesh* DoorMesh;
+
     /**
      * Used to replace default material of WallMesh
      * Check RoomTileMeshMaterialOverride docs for more info
@@ -123,6 +129,9 @@ private:
 
     // Make static mesh look to room center
     void AlignActorWithWorld(AActor* Actor, const TArray<FVector>& WallSpawnPoints);
+
+    // Make actor face to point
+    void FaceActorToPoint(AActor* Actor, FVector Point);
 
     // Find four corners of room, Knowing this poits we can prevent spanw object, so they will not block player movement 
     TArray<FVector> GetRoomPointsCloseToCornersLocatoin(TArray<FVector>& RoomPoints);

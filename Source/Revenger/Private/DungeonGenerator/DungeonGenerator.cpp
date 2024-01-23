@@ -122,6 +122,24 @@ void ADungeonGenerator::SpawnDungeonFurnitureFromDataTable()
     TArray<FTileMatrix::FWallSpawnPoint> CorridorWalls;
     TileMatrix.ProjectTileMapLocationsToWorld(DataTableFloorTileSize, Rooms, CorridorFloorTiles, CorridorWalls);
 
+    // spawn door frame 
+    FRoomTemplate RoomTemplate0 = *RoomTemplates[FMath::RandRange(0, RoomTemplates.Num() - 1)];
+    float TreasholdDistance = 410;
+    for (auto& corridor_pnt : CorridorFloorTiles) 
+    {
+        for (auto &Room : Rooms) 
+        {
+            for (auto& room_pnt : Room.FloorTileWorldLocations) 
+            {
+                if (FVector::DistXY(corridor_pnt, room_pnt) < TreasholdDistance) 
+                {
+                    AActor* act =  SpawnDungeonMesh(FTransform(FRotator::ZeroRotator, corridor_pnt + RoomTemplate0.PillarPivotOffset), RoomTemplate0.PillarMesh, RoomTemplate0.RoomPillarMeshMaterialOverride);
+                    FaceActorToPoint(act, room_pnt);
+                }
+            }
+        }
+    }
+
     // Iterate through rooms
     for (int32 i = 0; i < Rooms.Num(); i++) {
         FRoomTemplate RoomTemplate = *RoomTemplates[FMath::RandRange(0, RoomTemplates.Num() - 1)];
@@ -160,7 +178,7 @@ void ADungeonGenerator::SpawnDungeonFurnitureFromDataTable()
         FloorPoints.Empty();
         }
 
-        if (true) 
+        if (0) 
         {
         TArray<FVector> CornersSpawnPoints = GetRoomPointsCloseToCornersLocatoin(FloorPoints);
         for (int r = 0; r < FloorPoints.Num(); r++) {
@@ -437,6 +455,18 @@ void ADungeonGenerator::SpawnGenericDungeon(const TArray<FVector>& FloorTileLoca
     }
 }
 
+void ADungeonGenerator::FaceActorToPoint(AActor* Actor, FVector Point)
+{
+    if (Actor) 
+    {
+      FVector ActorLocation = Actor->GetActorLocation();
+      // Make actor looking to wall
+      FVector DirectionToPoint = Point - ActorLocation;
+      FRotator NewRotation = DirectionToPoint.Rotation();
+      Actor->SetActorRotation(NewRotation);
+    }
+}
+
 void ADungeonGenerator::DestroyDungeonMeshes()
 {
     // Erase previously spawned stuff
@@ -504,8 +534,8 @@ void ADungeonGenerator::GenerateDungeon()
     TileMatrix.MaxRandomAttemptsPerRoom = MaxRandomAttemptsPerRoom;
     TileMatrix.SetRoomSize(MinRoomSize, MaxRoomSize);
 
-    DestroyDungeonMeshes();
     TileMatrix.CreateRooms(RoomsToGenerate);
+    DestroyDungeonMeshes();
 
     if (RoomTemplatesDataTable) {
         SpawnDungeonFromDataTable();
