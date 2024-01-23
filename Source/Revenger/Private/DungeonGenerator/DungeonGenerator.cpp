@@ -147,24 +147,26 @@ void ADungeonGenerator::SpawnDungeonFurnitureFromDataTable()
     for (const auto& room : Rooms) {
         for (const auto& flor_pnt : room.FloorTileWorldLocations) {
             int NeighborCoridorTile = 0;
-            FVector SpawnPoint = FVector::ZeroVector;
+            TArray<FVector> SpawnPoints;
             for (const auto& pnt : WallOrDoorsPoints) // for each room
             {
-               
                 if (FVector::DistXY(pnt, flor_pnt) < TreasholdDistance) {
-                    SpawnPoint = pnt;
+                    SpawnPoints.Add(pnt);
                 }
                 if (FVector::DistXY(pnt, flor_pnt) < TreasholdDistance2) {
                     ++NeighborCoridorTile;
                 }
             }
-            if (NeighborCoridorTile > 2 && SpawnPoint != FVector::ZeroVector) {
+            if (NeighborCoridorTile > 2) {
                 // spawn wall
             } 
             else {
-                // spwn door frame
-                AActor* act = SpawnDungeonMesh(FTransform(FRotator::ZeroRotator, SpawnPoint + RoomTemplate0.PillarPivotOffset), RoomTemplate0.PillarMesh, RoomTemplate0.RoomPillarMeshMaterialOverride);
-                FaceActorToPoint(act, SpawnPoint);
+                for (const auto sp_pnt : SpawnPoints) 
+                {
+                    // spwn door frame
+                    AActor* act = SpawnDungeonMesh(FTransform(FRotator::ZeroRotator, sp_pnt + RoomTemplate0.PillarPivotOffset), RoomTemplate0.PillarMesh, RoomTemplate0.RoomPillarMeshMaterialOverride);
+                    FaceActorToPoint(act, flor_pnt);
+                }
             }
         }
     }
