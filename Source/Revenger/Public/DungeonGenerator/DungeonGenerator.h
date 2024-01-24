@@ -17,59 +17,32 @@ class UMaterialInterface;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDungeonSpawned);
 
 USTRUCT(BlueprintType)
-struct FRoomTemplate : public FTableRowBase {
+struct FDungeonRoomTemplate : public FTableRowBase {
     GENERATED_BODY()
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RoomTemplate")
-    UStaticMesh* RoomTileMesh;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RoomTemplate - Room Floor",
+        meta = (AllowPrivateAccess = "true"))
+    TSubclassOf<AActor> RoomFloor;
 
-    /**
-     * If assigned, we're going to replace the default material of the RoomTileMesh with the given mat
-     * Leave empty in case you want the default material
-     * Useful in cases where you want the same static mesh but with different material variations as room templates
-     */
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RoomTemplate")
-    UMaterialInterface* RoomTileMeshMaterialOverride;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RoomTemplate - Room Walls",
+        meta = (AllowPrivateAccess = "true"))
+    TSubclassOf<AActor> RoomWall;
 
-    /**
-     * Same functionality as FloorPivotOffset - check comments in Source Code or In-Editor Details Panel!
-     */
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RoomTemplate")
-    FVector RoomTilePivotOffset;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RoomTemplate")
-    UStaticMesh* WallMesh;
-
-     /**
-     * Same functionality as FloorPivotOffset - check comments in Source Code or In-Editor Details Panel!
-     */
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RoomTemplate")
-    UMaterialInterface* RoomPillarMeshMaterialOverride;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RoomTemplate")
-    FVector PillarPivotOffset;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RoomTemplate")
-    UStaticMesh* PillarMesh;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RoomTemplate Door")
-    FVector DoorPivotOffset;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RoomTemplate Door")
-    UStaticMesh* DoorMesh;
-
-    /**
-     * Used to replace default material of WallMesh
-     * Check RoomTileMeshMaterialOverride docs for more info
-     */
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RoomTemplate")
-    UMaterialInterface* WallMeshMaterialOverride;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RoomTemplate")
-    FVector WallMeshPivotOffset;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RoomTemplate")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RoomTemplate - Room Walls",
+        meta = (AllowPrivateAccess = "true"))
     bool bIsWallFacingX = true;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RoomTemplate - Corridor Floor",
+        meta = (AllowPrivateAccess = "true"))
+    TSubclassOf<AActor> CorridorFloor;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RoomTemplate - Corridor Walls",
+        meta = (AllowPrivateAccess = "true"))
+    TSubclassOf<AActor> CorridorWall;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RoomTemplate - Corridor Doors",
+        meta = (AllowPrivateAccess = "true"))
+    TSubclassOf<AActor> CorridorDoors;
 };
 
 UCLASS()
@@ -89,7 +62,8 @@ private:
     /**
      * Destroys all previously generated meshes from this dungeon generator
      */
-    void DestroyDungeonMeshes();
+    void DestroyDungeonActors();
+    void DestroyDungeonActors(FName Tag);
 
     /**
      * Spawns the assigned floorsm at the given transform
@@ -105,6 +79,7 @@ private:
      * @return the extend along Y axis
      */
     float CalculateFloorTileSize(const UStaticMesh& Mesh) const;
+    float CalculateFloorTileSize(const AActor* ActorTemplate) const;
 
     /**
      * Checks if a wall mesh needs to be rotated by 90 degrees
@@ -115,17 +90,25 @@ private:
      */
     FRotator CalculateWallRotation(bool bWallFacingXProperty, const FTileMatrix::FWallSpawnPoint& WallSpawnPoint, const FVector& WallPivotOffsetOverride, FVector& LocationOffset) const;
 
+
     /**
      * Spawns a dungeon using random room templates from a provided data table
      * Assumes the data table contains correct values in terms of mesh sizes etc.
      */
     void SpawnDungeonFromDataTable();
 
+    AActor* SpawnActor(AActor* Actor, FVector Location, FRotator Rotation);
+
+    AActor* SpawnActor(TSubclassOf<AActor>& ActorTemplate, FVector Location, FRotator Rotation);
+
+    void SpawnDoors(TArray<FTileMatrix::FRoom>& Rooms, TArray<FVector>& CorridorTiles, TArray<FTileMatrix::FWallSpawnPoint>& CorridorWalls, TArray<FDungeonRoomTemplate*>& RoomTemplates);
 
     // TO DO: complete implementation
     void SpawnDungeonFurnitureFromDataTable();
 
     FVector PushSpawnPointToCenter(FVector SpawnPoint, const TArray<FVector>& WallSpawnPoints);
+
+    FVector MoveVectorByRotation(const FVector& OriginalVector, const FRotator& Rotation, float Distance);
 
     // Make static mesh look to room center
     void AlignActorWithWorld(AActor* Actor, const TArray<FVector>& WallSpawnPoints);
@@ -133,13 +116,15 @@ private:
     // Make actor face to point
     void FaceActorToPoint(AActor* Actor, FVector Point);
 
-    // Find four corners of room, Knowing this poits we can prevent spanw object, so they will not block player movement 
+    UStaticMesh* GetStaticMesh(AActor* ActorTemplate);
+
+    // Find four corners of room, Knowing this poits we can prevent spanw object, so they will not block player movement
     TArray<FVector> GetRoomPointsCloseToCornersLocatoin(TArray<FVector>& RoomPoints);
 
     // Helper function to calculate the center of a room
     FVector GetRoomCenter(const TArray<FVector>& RoomPoints) const;
 
-   bool IsPointCloseToWall(const FVector& Point, const TArray<FTileMatrix::FWallSpawnPoint>& WallSpawnPoints, bool bIsWallFacingX, FVector& OutModifiedOffset, FRotator& OutRotation, bool& bShouldPlaceObject) const;
+    bool IsPointCloseToWall(const FVector& Point, const TArray<FTileMatrix::FWallSpawnPoint>& WallSpawnPoints, bool bIsWallFacingX, FVector& OutModifiedOffset, FRotator& OutRotation, bool& bShouldPlaceObject) const;
 
     bool IsPointInCorridor(const FVector& Point, const TArray<FTileMatrix::FWallSpawnPoint>& WallSpawnPoints) const;
 
@@ -253,7 +238,7 @@ protected:
      * Assumes that the assigned floor and wall meshes have the same dimensions as the generic floor and wall meshes
      */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Generator Properties")
-    UDataTable* RoomTemplatesDataTable;
+    UDataTable* DungeonTemplatesDataTable;
 
 public:
     /**
