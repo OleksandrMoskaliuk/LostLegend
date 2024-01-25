@@ -126,9 +126,26 @@ void ADungeonGenerator::SpawnDungeonFromDataTable()
     }
    
     SpawnDoors();
-    for (const auto& room : m_Rooms) 
+    /*for (const auto& room : m_Rooms) 
     {
         SpawnChest(room, 20);
+    }*/
+    // Example how to spawm room object using SpawnRoomObject method
+    for (const auto& room : m_Rooms) {
+        FDungeonRoomTemplate* RoomTemplate = m_RoomTemplates[FMath::RandRange(0, m_RoomTemplates.Num() - 1)];
+        SpawnRoomObject(RoomTemplate->RoomChest, room, 10, 0.1, RoomTemplate->RoomChestSpawnChance);
+    }
+    for (const auto& room : m_Rooms) {
+        FDungeonRoomTemplate* RoomTemplate = m_RoomTemplates[FMath::RandRange(0, m_RoomTemplates.Num() - 1)];
+        SpawnRoomObject(RoomTemplate->RoomChest, room, 10, 0.2, RoomTemplate->RoomChestSpawnChance);
+    }
+    for (const auto& room : m_Rooms) {
+        FDungeonRoomTemplate* RoomTemplate = m_RoomTemplates[FMath::RandRange(0, m_RoomTemplates.Num() - 1)];
+        SpawnRoomObject(RoomTemplate->RoomChest, room, 10, 0.3, RoomTemplate->RoomChestSpawnChance);
+    }
+    for (const auto& room : m_Rooms) {
+        FDungeonRoomTemplate* RoomTemplate = m_RoomTemplates[FMath::RandRange(0, m_RoomTemplates.Num() - 1)];
+        SpawnRoomObject(RoomTemplate->RoomChest, room, 10, 0.4, RoomTemplate->RoomChestSpawnChance);
     }
 }
 
@@ -402,6 +419,60 @@ bool ADungeonGenerator::IsPointInCorridor(const FVector& Point, const TArray<FTi
     return false; // Point is not in the corridor
 }
 
+
+void ADungeonGenerator::SpawnRoomObject(TSubclassOf<AActor>& ObjectToSpawn, const FTileMatrix::FRoom& Room, int MaxAmountToSpawn, float Distance, float ChanceToSpawn)
+{
+    float NotSpawnNearCorridorDistance = 600;
+    int SpwannedAmount = 0;
+
+    // How far move object while spawn [Near wall - 0.01 to ... 0.5 - Room center]
+    float MoveSpawnObject = FMath::Clamp(Distance, 0.01f, 0.5f);
+    TArray<FVector> SpawnPoints;
+
+    // Get wall around for calculating room center
+    TArray<FVector> WallsAround;
+    for (const auto& wall_pnt : Room.WallSpawnPoints) {
+        WallsAround.Add(wall_pnt.WorldLocation);
+    }
+
+    // How far we can move object to center
+    float RoomSizeX = 0;
+    float RoomSizeY = 0;
+    RoomSize(WallsAround, RoomSizeX, RoomSizeY);
+    float RoomSizeMin = FMath::Min(RoomSizeX, RoomSizeY);
+    FVector RoomCenter = GetRoomCenter(WallsAround);
+
+    // Find all corridor points that are close to our rooms fllor
+    // Use free space near this room walls
+    for (const auto& wall_pnt : Room.WallSpawnPoints) {
+        if (SpwannedAmount < MaxAmountToSpawn) {
+            FRotator AlignedRotation = AlignActorWithWorld(wall_pnt.WorldLocation, RoomCenter);
+            FVector SpawnLocation = (wall_pnt.WorldLocation + AlignedRotation.Vector() * (RoomSizeMin * MoveSpawnObject));
+            // Get corridor point if it close don't spawn
+            bool CanSpawnHere = true;
+            for (const auto& corridor_pnt : m_CorridorFloorTiles) {
+                if (FVector::DistXY(wall_pnt.WorldLocation, corridor_pnt) < NotSpawnNearCorridorDistance) {
+                    CanSpawnHere = false;
+                }
+            }
+            if (CanSpawnHere) {
+                // Check  if there no spawned object near seleceted places
+                for (const auto& occ_pnt : m_OccupiedPoints) {
+                    if (FVector::DistXY(SpawnLocation, occ_pnt) < 400.f) {
+                        CanSpawnHere = false;
+                    }
+                }
+                if (CanSpawnHere) {
+                    if (ChanceToSpawn > FMath::RandRange(0.f, 0.99f)) {
+                        SpawnActor(ObjectToSpawn, SpawnLocation, AlignedRotation);
+                        m_OccupiedPoints.Add(SpawnLocation);
+                    }
+                    SpwannedAmount++;
+                }
+            }
+        }
+    }
+}
 
 AActor* ADungeonGenerator::SpawnActor(AActor* Actor, FVector& Location, FRotator& Rotation)
 {

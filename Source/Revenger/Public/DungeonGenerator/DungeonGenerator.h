@@ -132,6 +132,16 @@ private:
     void SpawnChest(const FTileMatrix::FRoom& Room, int MaxAmountToSpawn);
 
     /**
+     * Spawn object in room
+     * @param ObjectToSpawn - Actor from data table
+     * @param Room - Specify room to spawn object in
+     * @param MaxAmountToSpawn - How many object to spawn
+     * @param Distance - How far from wall to center should spawn object [0.01 - Near wall ... 0.5 - Room center]
+     * @param ChanceToSpawn - Chance to spawn for each object if "MaxAmountToSpawn" more than one
+     */
+    void SpawnRoomObject(TSubclassOf<AActor> &ObjectToSpawn, const FTileMatrix::FRoom& Room, int MaxAmountToSpawn, float Distance, float ChanceToSpawn);
+
+    /**
      * Helper functions
      */
     AActor* SpawnActor(AActor* Actor, FVector& Location, FRotator& Rotation);
