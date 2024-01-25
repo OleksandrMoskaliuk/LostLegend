@@ -134,7 +134,7 @@ private:
     /**
      * Helper functions
      */
-    AActor* SpawnActor(AActor* Actor, FVector Location, FRotator Rotation);
+    AActor* SpawnActor(AActor* Actor, FVector& Location, FRotator& Rotation);
 
     AActor* SpawnActor(TSubclassOf<AActor>& ActorTemplate, FVector Location, FRotator Rotation);
 
@@ -142,9 +142,13 @@ private:
 
     FVector MoveVectorTowardRotation(const FVector& OriginalVector, const FRotator& Rotation, float Distance);
 
+    // Find room size. Useful for pushing items to center treashold. This help to find max distance to push.
+    void RoomSize(TArray<FVector>& ArrayOfRoomPoints, float& XLength, float& YLength); 
+
     // Make static mesh look in point that is closer to one of (right left forward  backward) direction
     // Align actor with world
     void AlignActorWithWorld(AActor* Actor, const FVector RoomCenter);
+    FRotator AlignActorWithWorld(const FVector Location, const FVector RoomCenter);
 
     // Make actor face to point
     void FaceActorToPoint(AActor* Actor, FVector Point);

@@ -228,6 +228,57 @@ void ADungeonGenerator::AlignActorWithWorld(AActor* Actor, const FVector RoomCen
 }
 
 
+FRotator ADungeonGenerator::AlignActorWithWorld(const FVector Location, const FVector RoomCenter)
+{
+
+    // Find the closest wall to the actor
+    FVector ActorLocation = Location;
+
+    // Make actor looking to wall
+    FVector DirectionToWall = ActorLocation - RoomCenter;
+    FRotator NewRotation = DirectionToWall.Rotation();
+
+    // Rotate actotr to 180 degree
+    FRotator ActorRotation = NewRotation - FRotator(0, 180, 0);
+
+    FRotator Left = FVector::LeftVector.Rotation();
+    float LeftAlignmentDegree = FQuat::FindBetweenNormals(ActorRotation.Vector(), Left.Vector()).GetAngle();
+
+    FRotator Right = FVector::RightVector.Rotation();
+    float RightAlignmentDegree = FQuat::FindBetweenNormals(ActorRotation.Vector(), Right.Vector()).GetAngle();
+
+    FRotator Forward = FVector::ForwardVector.Rotation();
+    float ForwardAlignmentDegree = FQuat::FindBetweenNormals(ActorRotation.Vector(), Forward.Vector()).GetAngle();
+
+    FRotator Backward = (-FVector::ForwardVector).Rotation();
+    float BackwardAlignmentDegree = FQuat::FindBetweenNormals(ActorRotation.Vector(), Backward.Vector()).GetAngle();
+
+    // Find the smallest alignment degree
+    float SmallestAlignmentDegree = LeftAlignmentDegree;
+    if (RightAlignmentDegree < SmallestAlignmentDegree) {
+        SmallestAlignmentDegree = RightAlignmentDegree;
+    }
+    if (ForwardAlignmentDegree < SmallestAlignmentDegree) {
+        SmallestAlignmentDegree = ForwardAlignmentDegree;
+    }
+    if (BackwardAlignmentDegree < SmallestAlignmentDegree) {
+        SmallestAlignmentDegree = BackwardAlignmentDegree;
+    }
+
+    // Set the actor's rotation based on the smallest alignment degree
+    if (SmallestAlignmentDegree == LeftAlignmentDegree) {
+        ActorRotation = Left;
+    } else if (SmallestAlignmentDegree == RightAlignmentDegree) {
+        ActorRotation = Right;
+    } else if (SmallestAlignmentDegree == ForwardAlignmentDegree) {
+        ActorRotation = Forward;
+    } else if (SmallestAlignmentDegree == BackwardAlignmentDegree) {
+        ActorRotation = Backward;
+    }
+    
+    return ActorRotation;
+}
+
 FVector ADungeonGenerator::MoveVectorTowardRotation(const FVector& OriginalVector, const FRotator& Rotation, float Distance)
 {
     // Convert the FRotator to a quaternion
@@ -352,25 +403,29 @@ bool ADungeonGenerator::IsPointInCorridor(const FVector& Point, const TArray<FTi
 }
 
 
-AActor* ADungeonGenerator::SpawnActor(AActor* Actor, FVector Location, FRotator Rotation)
+AActor* ADungeonGenerator::SpawnActor(AActor* Actor, FVector& Location, FRotator& Rotation)
 {
     if (!Actor) {
         // Handle error, the template actor is invalid
         return nullptr;
     }
     UClass* ActorClass = Actor->GetClass();
-    AActor* NewActor = GetWorld()->SpawnActor<AActor>(ActorClass, Location, Rotation);
-    if (NewActor) {
-        // Optionally, you can further configure the spawned actor
-        // For example, set properties, attach components, etc.
-        NewActor->Tags.Add(DUNGEON_MESH_TAG);
+    AActor* NewActor = nullptr;
+    if (UWorld* World = GetWorld()) {
+        NewActor = World->SpawnActor<AActor>(ActorClass, Location, Rotation);
+        if (NewActor) {
+            // Optionally, you can further configure the spawned actor
+            // For example, set properties, attach components, etc.
+            NewActor->Tags.Add(DUNGEON_MESH_TAG);
+            return NewActor;
+        }
     }
-    return NewActor;
+    return nullptr;
 }
 
 AActor* ADungeonGenerator::SpawnActor(TSubclassOf<AActor> &ActorTemplate, FVector Location, FRotator Rotation)
 {
-     if (ActorTemplate) {
+    if (ActorTemplate && ActorTemplate.Get()) {
         UWorld* World = GetWorld();
         if (World) {
             AActor* NewActor = World->SpawnActor<AActor>(ActorTemplate, Location, Rotation);
@@ -382,7 +437,6 @@ AActor* ADungeonGenerator::SpawnActor(TSubclassOf<AActor> &ActorTemplate, FVecto
             }
         }
      }
-
      return nullptr;
 }
 
@@ -428,8 +482,11 @@ void ADungeonGenerator::SpawnDoors()
 
 void ADungeonGenerator::SpawnChest(const FTileMatrix::FRoom& Room, int MaxAmountToSpawn)
 {
+     float NotSpawnNearCorridorDistance = 600;
      int SpwannedAmount = 0;
      float DistanceTreashold = 410;
+     // How far move object while spawn [Near wall - 0.01 to ... 0.5 - Room center]
+     float MoveSpawnObject = 0.1;
      TArray<FVector> SpawnPoints;
      // Find all corridor points that are close to our rooms fllor
      // Use free space near this room walls
@@ -438,53 +495,83 @@ void ADungeonGenerator::SpawnChest(const FTileMatrix::FRoom& Room, int MaxAmount
             // Get corridor point if it close don't spawn
             bool CanSpawnHere = true;
             for (const auto& corridor_pnt : m_CorridorFloorTiles) {
-                if (FVector::DistXY(wall_pnt.WorldLocation, corridor_pnt) < (1000 + 10)) {
+                if (FVector::DistXY(wall_pnt.WorldLocation, corridor_pnt) < NotSpawnNearCorridorDistance) {
                     CanSpawnHere = false;
                 }
             }
+            FVector SpawnPoint = wall_pnt.WorldLocation;
             if (CanSpawnHere) {
-                // Find nearest room flor tile to look and shift in this direction
-                float DistanceToFloorPoint = 100000.f;
-                FVector NearFloorTilePoint;
-                for (const auto& floor_pnt : Room.FloorTileWorldLocations) {
-                    if (float CalcDistance = FVector::DistXY(wall_pnt.WorldLocation, floor_pnt) < DistanceToFloorPoint) {
-                        DistanceToFloorPoint = CalcDistance;
-                        NearFloorTilePoint = floor_pnt;
-                    }
-                }
-                FVector FinalSpawnPoint = FMath::Lerp(wall_pnt.WorldLocation, NearFloorTilePoint, 0.3);
-                // Check if final spawn point is not already occupied
-                for (const auto& ocp_pnt : m_OccupiedPoints) {
-                    if (FVector::DistXY(FinalSpawnPoint, ocp_pnt) < 410) {
-                        CanSpawnHere = false;
-                    }
-                }
-                if (CanSpawnHere) {
-                    SpawnPoints.Add(FinalSpawnPoint);
-                    SpwannedAmount++;
-                }
+               SpawnPoints.Add(SpawnPoint);
+               SpwannedAmount++;
             }
         }
      }
+
      // Get wall around for calculating room center
      TArray<FVector> WallsAround;
      for (const auto& wall_pnt : Room.WallSpawnPoints) 
      {
         WallsAround.Add(wall_pnt.WorldLocation);
      }
+
+      // How far we can move object threashold
+     float RoomSizeX = 0;
+     float RoomSizeY = 0;
+     RoomSize(WallsAround, RoomSizeX, RoomSizeY);
+     float RoomSizeMin = FMath::Min(RoomSizeX, RoomSizeY);
      FVector RoomCenter = GetRoomCenter(WallsAround);
+
      // Spawn Chest
      for (int i = 0; i < SpawnPoints.Num(); i++) {
         // Pick random chest if more than one actor chest added
         FDungeonRoomTemplate* RoomTemplate = m_RoomTemplates[FMath::RandRange(0, m_RoomTemplates.Num() - 1)];
         float NowChanece = FMath::RandRange(0.f, 0.99f);
         if (RoomTemplate->RoomChestSpawnChance > NowChanece) {
-            FRotator ThisActorRotation = (SpawnPoints[i] - RoomCenter).Rotation();
-            AActor* NewActor = SpawnActor(RoomTemplate->RoomChest, SpawnPoints[i], ThisActorRotation);
-            AlignActorWithWorld(NewActor, RoomCenter);
+            FRotator AlignedRotation  = AlignActorWithWorld(SpawnPoints[i], RoomCenter);
+            FVector SpawnLocation = SpawnPoints[i] + AlignedRotation.Vector() * (RoomSizeMin * MoveSpawnObject);
+            // Check if this place is occupied or not before final spawn
+            float IsOccupied = false;
+            for (const auto& pnt : m_OccupiedPoints) {
+                if (FVector::DistXY(pnt, SpawnLocation) < 410.f) {
+                    IsOccupied = true;
+                }
+            }
+            if (!IsOccupied) 
+            {
+            SpawnActor(RoomTemplate->RoomChest, SpawnLocation, AlignedRotation);
             m_OccupiedPoints.Add(SpawnPoints[i]);
+            }
         }
      }
+}
+
+// Find room size. Useful for pushing items to center treashold. This help to find max distance to push.
+void ADungeonGenerator::RoomSize(TArray<FVector>& ArrayOfRoomPoints, float& XLength, float& YLength)
+{
+     if (ArrayOfRoomPoints.Num() == 0) {
+        // Handle the case where the array is empty
+        XLength = 0;
+        YLength = 0;
+        return;
+     }
+
+     // Initialize min and max values with the first point
+     float MinX = ArrayOfRoomPoints[0].X;
+     float MinY = ArrayOfRoomPoints[0].Y;
+     float MaxX = ArrayOfRoomPoints[0].X;
+     float MaxY = ArrayOfRoomPoints[0].Y;
+
+     // Iterate through the array to find min and max values
+     for (const FVector& Point : ArrayOfRoomPoints) {
+        MinX = FMath::Min(MinX, Point.X);
+        MinY = FMath::Min(MinY, Point.Y);
+        MaxX = FMath::Max(MaxX, Point.X);
+        MaxY = FMath::Max(MaxY, Point.Y);
+     }
+
+     // Calculate the square size
+     XLength = FMath::CeilToFloat(MaxX - MinX);
+     YLength = FMath::CeilToFloat(MaxY - MinY);
 }
 
 void ADungeonGenerator::SpawnGenericDungeon(const TArray<FVector>& FloorTileLocations, const TArray<FTileMatrix::FWallSpawnPoint>& WallSpawnPoints)
