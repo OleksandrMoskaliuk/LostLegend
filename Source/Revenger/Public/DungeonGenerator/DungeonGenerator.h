@@ -32,6 +32,14 @@ struct FDungeonRoomTemplate : public FTableRowBase {
         meta = (AllowPrivateAccess = "true"))
     bool bIsWallFacingX = true;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RoomTemplate - Room Chest",
+        meta = (AllowPrivateAccess = "true"))
+    TSubclassOf<AActor> RoomChest;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RoomTemplate - Room Chest",
+        meta = (AllowPrivateAccess = "true"), meta = (ClampMin = "0.0", ClampMax = "1.0", UIMin = "0.0", UIMax = "1.0"))
+    float RoomChestSpawnChance = 0;
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RoomTemplate - Corridor Floor",
         meta = (AllowPrivateAccess = "true"))
     TSubclassOf<AActor> CorridorFloor;
@@ -53,11 +61,32 @@ private:
     /**
      * The tile matrix we're going to use to generate the floor tile locations and the wall locations / rotations
      */
-    FTileMatrix TileMatrix;
+    FTileMatrix m_TileMatrix;
 
-    /*void SpawnFloorTiles(const TArray<FVector>& SpawnLocations, UMaterialInterface* MaterialOverride = nullptr);
+    /**
+     * The m_RoomTemplates loaded from DataTable
+     */
+    TArray<FDungeonRoomTemplate*> m_RoomTemplates;
 
-    void SpawnWallTiles(const TArray<FVector>& SpawnLocations, UMaterialInterface* MaterialOverride = nullptr);*/
+    /**
+     * Walls and floor points
+     */
+    TArray<FTileMatrix::FRoom> m_Rooms;
+
+    /**
+    * Points that laready have spwaned objects
+    */
+    TArray<FVector> m_OccupiedPoints;
+
+    /**
+     * Corridor floor spawn points for spawn corridor tiles
+     */
+    TArray<FVector> m_CorridorFloorTiles;
+
+    /**
+     * Corridor Walls points for spawn corridor walls
+     */
+    TArray<FTileMatrix::FWallSpawnPoint> m_CorridorWalls;
 
     /**
      * Destroys all previously generated meshes from this dungeon generator
@@ -90,28 +119,32 @@ private:
      */
     FRotator CalculateWallRotation(bool bWallFacingXProperty, const FTileMatrix::FWallSpawnPoint& WallSpawnPoint, const FVector& WallPivotOffsetOverride, FVector& LocationOffset) const;
 
-
     /**
      * Spawns a dungeon using random room templates from a provided data table
      * Assumes the data table contains correct values in terms of mesh sizes etc.
      */
     void SpawnDungeonFromDataTable();
 
+    /**
+     * Spawns dungeon objects using random room templates from a provided data table
+     */
+    void SpawnDoors();
+    void SpawnChest(const FTileMatrix::FRoom& Room, int MaxAmountToSpawn);
+
+    /**
+     * Helper functions
+     */
     AActor* SpawnActor(AActor* Actor, FVector Location, FRotator Rotation);
 
     AActor* SpawnActor(TSubclassOf<AActor>& ActorTemplate, FVector Location, FRotator Rotation);
 
-    void SpawnDoors(TArray<FTileMatrix::FRoom>& Rooms, TArray<FVector>& CorridorTiles, TArray<FTileMatrix::FWallSpawnPoint>& CorridorWalls, TArray<FDungeonRoomTemplate*>& RoomTemplates);
-
-    // TO DO: complete implementation
-    void SpawnDungeonFurnitureFromDataTable();
-
     FVector PushSpawnPointToCenter(FVector SpawnPoint, const TArray<FVector>& WallSpawnPoints);
 
-    FVector MoveVectorByRotation(const FVector& OriginalVector, const FRotator& Rotation, float Distance);
+    FVector MoveVectorTowardRotation(const FVector& OriginalVector, const FRotator& Rotation, float Distance);
 
-    // Make static mesh look to room center
-    void AlignActorWithWorld(AActor* Actor, const TArray<FVector>& WallSpawnPoints);
+    // Make static mesh look in point that is closer to one of (right left forward  backward) direction
+    // Align actor with world
+    void AlignActorWithWorld(AActor* Actor, const FVector RoomCenter);
 
     // Make actor face to point
     void FaceActorToPoint(AActor* Actor, FVector Point);

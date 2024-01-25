@@ -68,13 +68,12 @@ void ADungeonGenerator::SpawnDungeonFromDataTable()
 {
 
     FString ContextStr;
-    TArray<FDungeonRoomTemplate*> RoomTemplates;
-    DungeonTemplatesDataTable->GetAllRows<FDungeonRoomTemplate>(ContextStr, RoomTemplates);
+    DungeonTemplatesDataTable->GetAllRows<FDungeonRoomTemplate>(ContextStr, m_RoomTemplates);
      
-    ensure(RoomTemplates.Num() > 0);
+    ensure(m_RoomTemplates.Num() > 0);
 
     float DataTableFloorTileSize = 0;
-    if (AActor* FloorTileActor = SpawnActor(RoomTemplates[0]->RoomFloor, FVector(), FRotator())) 
+    if (AActor* FloorTileActor = SpawnActor(m_RoomTemplates[0]->RoomFloor, FVector(), FRotator())) 
     {
         FloorTileActor->Tags.Add("dungeon room tile size test");
         DataTableFloorTileSize = CalculateFloorTileSize(FloorTileActor);
@@ -85,213 +84,54 @@ void ADungeonGenerator::SpawnDungeonFromDataTable()
             return;
         }
     }
-  
 
-    TArray<FTileMatrix::FRoom> Rooms;
-    TArray<FVector> CorridorFloorTiles;
-    TArray<FTileMatrix::FWallSpawnPoint> CorridorWalls;
-    TileMatrix.ProjectTileMapLocationsToWorld(DataTableFloorTileSize, Rooms, CorridorFloorTiles, CorridorWalls);
+    m_TileMatrix.ProjectTileMapLocationsToWorld(DataTableFloorTileSize, m_Rooms, m_CorridorFloorTiles, m_CorridorWalls);
 
     // Spawn rooms & walls using a random template from the provided table
-    for (int32 i = 0; i < Rooms.Num(); i++) {
-        FDungeonRoomTemplate *RoomTemplate = RoomTemplates[FMath::RandRange(0, RoomTemplates.Num() - 1)];
+    for (int32 i = 0; i < m_Rooms.Num(); i++) {
+        FDungeonRoomTemplate *RoomTemplate = m_RoomTemplates[FMath::RandRange(0, m_RoomTemplates.Num() - 1)];
 
         // Spawn floor in rooms 
-        for (int32 j = 0; j < Rooms[i].FloorTileWorldLocations.Num(); j++) {
-            FVector WorldSpawnLocation = Rooms[i].FloorTileWorldLocations[j];
+        for (int32 j = 0; j < m_Rooms[i].FloorTileWorldLocations.Num(); j++) {
+            FVector WorldSpawnLocation = m_Rooms[i].FloorTileWorldLocations[j];
             SpawnActor(RoomTemplate->RoomFloor, WorldSpawnLocation, FRotator::ZeroRotator);
         }
 
          // Spawn walls around rooms
-        for (int32 j = 0; j < Rooms[i].WallSpawnPoints.Num(); j++) {
+        for (int32 j = 0; j < m_Rooms[i].WallSpawnPoints.Num(); j++) {
             // FVector WorldSpawnLocation = Rooms[i].WallSpawnPoints[j].WorldLocation;
             FVector WallModifiedOffset = FVector();
             FVector WallMeshPivotOffset = FVector();
-            FRotator WallSpawnRotation = CalculateWallRotation(RoomTemplate->bIsWallFacingX, Rooms[i].WallSpawnPoints[j], WallMeshPivotOffset, WallModifiedOffset);
-            FVector WallSpawnLocation = Rooms[i].WallSpawnPoints[j].WorldLocation + WallModifiedOffset;
+            FRotator WallSpawnRotation = CalculateWallRotation(RoomTemplate->bIsWallFacingX, m_Rooms[i].WallSpawnPoints[j], WallMeshPivotOffset, WallModifiedOffset);
+            FVector WallSpawnLocation = m_Rooms[i].WallSpawnPoints[j].WorldLocation + WallModifiedOffset;
             SpawnActor(RoomTemplate->RoomWall, WallSpawnLocation, WallSpawnRotation);
         }
     }
 
     // Make coridors from random tiles
-    if (FDungeonRoomTemplate* RoomTemplate = RoomTemplates[FMath::RandRange(0, RoomTemplates.Num() - 1)]) {
+    if (FDungeonRoomTemplate* RoomTemplate = m_RoomTemplates[FMath::RandRange(0, m_RoomTemplates.Num() - 1)]) {
         // Spawn floor tiles for corridors
-        for (int32 i = 0; i < CorridorFloorTiles.Num(); i++) {
-            SpawnActor(RoomTemplate->CorridorFloor, CorridorFloorTiles[i], FRotator::ZeroRotator);
+        for (int32 i = 0; i < m_CorridorFloorTiles.Num(); i++) {
+            SpawnActor(RoomTemplate->CorridorFloor, m_CorridorFloorTiles[i], FRotator::ZeroRotator);
         }
 
         bool bCorridorWallFacingX = RoomTemplate->bIsWallFacingX;
         // Spawn walls for corridors
-        for (int32 i = 0; i < CorridorWalls.Num(); i++) {
+        for (int32 i = 0; i < m_CorridorWalls.Num(); i++) {
             FVector WallModifiedOffset = FVector();
-            FRotator WallRotation = CalculateWallRotation(bCorridorWallFacingX, CorridorWalls[i], FVector::ZeroVector, WallModifiedOffset);
-            FVector WallSpawnPoint = CorridorWalls[i].WorldLocation + WallModifiedOffset;
+            FRotator WallRotation = CalculateWallRotation(bCorridorWallFacingX, m_CorridorWalls[i], FVector::ZeroVector, WallModifiedOffset);
+            FVector WallSpawnPoint = m_CorridorWalls[i].WorldLocation + WallModifiedOffset;
             SpawnActor(RoomTemplate->CorridorWall, WallSpawnPoint, WallRotation);
         }
     }
    
-    SpawnDoors(Rooms, CorridorFloorTiles, CorridorWalls, RoomTemplates);
-    
+    SpawnDoors();
+    for (const auto& room : m_Rooms) 
+    {
+        SpawnChest(room, 20);
+    }
 }
 
-
-
-void ADungeonGenerator::SpawnDungeonFurnitureFromDataTable()
-{
-    //TArray<FDungeonRoomTemplate*> RoomTemplates;
-    //FString ContextStr;
-    //DungeonTemplatesDataTable->GetAllRows<FDungeonRoomTemplate>(ContextStr, RoomTemplates);
-
-    //ensure(RoomTemplates.Num() > 0);
-
-
-    //AActor* DoorFrame = (RoomTemplates[0]->DoorFrameActor)->GetDefaultObject<AActor>();
-
-    //float DataTableFloorTileSize = CalculateFloorTileSize(*GetStaticMesh(DoorFrame));
-    //////////////////////////////
-    //TArray<FTileMatrix::FRoom> Rooms;
-    //TArray<FVector> CorridorFloorTiles;
-    //TArray<FTileMatrix::FWallSpawnPoint> CorridorWalls;
-    //TileMatrix.ProjectTileMapLocationsToWorld(DataTableFloorTileSize, Rooms, CorridorFloorTiles, CorridorWalls);
-
-    //// spawn door frame and walls
-    //FDungeonRoomTemplate RoomTemplate0 = *RoomTemplates[FMath::RandRange(0, RoomTemplates.Num() - 1)];
-    //float TreasholdDistance = 400.f + 10.f;
-    //float TreasholdDistance2 = 565.f + 10.f; 
-    //// Wall or Door points to spwan for all rooms
-    //TArray<FVector> WallOrDoorsPoints;
-    //for (auto& corridor_pnt : CorridorFloorTiles) 
-    //{
-    //    for (auto &Room : Rooms) 
-    //    {
-    //        // Make array to hold point that can be walls or door frame 
-    //        for (auto& room_pnt : Room.FloorTileWorldLocations) 
-    //        {
-    //            if (FVector::DistXY(corridor_pnt, room_pnt) < TreasholdDistance) 
-    //            {
-    //                WallOrDoorsPoints.Add(corridor_pnt);
-    //            }
-    //        }
-    //    }
-    //}
-    //// Decide waht spawn wall or door frame
-    //// Check if corridor point do not have more than 3 closer room tiles if so spawn wall else spawn door frame
-    //for (const auto& room : Rooms) {
-    //    for (const auto& flor_pnt : room.FloorTileWorldLocations) {
-    //        int NeighborCoridorTile = 0;
-    //        TArray<FVector> SpawnPoints;
-    //        for (const auto& pnt : WallOrDoorsPoints) // for each room
-    //        {
-    //            if (FVector::DistXY(pnt, flor_pnt) < TreasholdDistance) {
-    //                SpawnPoints.Add(pnt);
-    //            }
-    //            if (FVector::DistXY(pnt, flor_pnt) < TreasholdDistance2) {
-    //                ++NeighborCoridorTile;
-    //            }
-    //        }
-    //        if (NeighborCoridorTile > 2) {
-    //            // spawn wall
-    //        } 
-    //        else {
-    //            for (const auto sp_pnt : SpawnPoints) 
-    //            {
-
-    //                // spwn door frame
-    //               /* AActor* act = SpawnDungeonMesh(FTransform(FRotator::ZeroRotator, sp_pnt + RoomTemplate0.PillarPivotOffset), RoomTemplate0.PillarMesh, RoomTemplate0.RoomPillarMeshMaterialOverride);
-    //                FaceActorToPoint(act, flor_pnt);
-    //                act->SetActorRotation(act->GetActorRotation() + FRotator(0, 90, 0));*/
-    //                
-
-    //                /// <summary>
-    //                ///  Spawn actor template 
-    //                /// </summary>
-    //               
-    //                    // Get the location and rotation of the player controller
-    //                  
-    //                 
-    //                    // Set the spawn parameters
-    //                    
-    //                    FRotator ARot = FVector(flor_pnt - sp_pnt).Rotation(); 
-    //                    SpawnActor(RoomTemplate0.DoorFrameActor, sp_pnt, ARot);
-    //                  
-    //                 
-    //                
-    //            }
-    //        }
-    //    }
-    //}
-
-
-    //// Iterate through rooms
-    //if (0) 
-    //{
-    //for (int32 i = 0; i < Rooms.Num(); i++) {
-    //    FDungeonRoomTemplate RoomTemplate = *RoomTemplates[FMath::RandRange(0, RoomTemplates.Num() - 1)];
-
-    //    TArray<FVector> FloorPoints;
-
-    //    for (int32 j = 0; j < Rooms[i].WallSpawnPoints.Num(); j++) {
-    //        // Use only wall spawn point for more precision spawn
-    //        FVector WorldSpawnLocation = Rooms[i].WallSpawnPoints[j].WorldLocation;
-    //        // Calculate offsets
-    //        FVector WallModifiedOffset;
-    //        FRotator WallRotation;
-    //        bool bShouldPlaceObject = true;
-    //        FloorPoints.Add(WorldSpawnLocation);
-    //        if (false) {
-    //            // Check if the point is close to a wall
-    //            if (IsPointCloseToWall(WorldSpawnLocation, Rooms[i].WallSpawnPoints, RoomTemplate.bIsWallFacingX, WallModifiedOffset, WallRotation, bShouldPlaceObject)) {
-    //                // Check if the object should be placed based on a random chance
-    //                if (bShouldPlaceObject) {
-    //                    // Add an additional offset for placing the object from the wall
-    //                    FVector ObjectPlacementOffset = FVector(50.0f, 0.0f, 0.0f); // Adjust this offset based on your requirements
-    //                    // Spawn wall here
-    //                }
-    //            } else {
-    //                // Regular room tile placement
-    //                SpawnDungeonMesh(FTransform(FRotator::ZeroRotator, WorldSpawnLocation + RoomTemplate.PillarPivotOffset), RoomTemplate.PillarMesh, RoomTemplate.RoomPillarMeshMaterialOverride);
-    //            }
-    //        }
-    //    }
-    //    
-
-    //    // Spawn center, works as expected, Only if use wapp spawn poinats
-    //    if (false) 
-    //    {
-    //    SpawnDungeonMesh(FTransform(FRotator::ZeroRotator, GetRoomCenter(FloorPoints) +RoomTemplate.PillarPivotOffset), RoomTemplate.PillarMesh, RoomTemplate.RoomPillarMeshMaterialOverride);
-    //    FloorPoints.Empty();
-    //    }
-
-    //    if (0) 
-    //    {
-    //    TArray<FVector> CornersSpawnPoints = GetRoomPointsCloseToCornersLocatoin(FloorPoints);
-    //    for (int r = 0; r < FloorPoints.Num(); r++) {
-    //            if (0) {
-    //                FVector SpawPnt = PushSpawnPointToCenter(FloorPoints[r], FloorPoints);
-    //                AActor* Actor = SpawnDungeonMesh(FTransform(FRotator::ZeroRotator, SpawPnt + RoomTemplate.PillarPivotOffset),
-    //                    RoomTemplate.PillarMesh, RoomTemplate.RoomPillarMeshMaterialOverride);
-    //                AlignActorWithWorld(Actor, FloorPoints);
-    //            }
-    //            bool CanSpawn = true;
-    //            for (auto& pnt : CornersSpawnPoints) {
-    //                if (pnt.Equals(FloorPoints[r], 0.1)) {
-    //                    CanSpawn = false;
-    //                }
-    //            }
-    //            if (CanSpawn) {
-    //                FVector SpawPnt = PushSpawnPointToCenter(FloorPoints[r], FloorPoints);
-    //                AActor* Actor = SpawnDungeonMesh(FTransform(FRotator::ZeroRotator, SpawPnt + RoomTemplate.PillarPivotOffset),
-    //                    RoomTemplate.PillarMesh, RoomTemplate.RoomPillarMeshMaterialOverride);
-    //                AlignActorWithWorld(Actor, FloorPoints);
-    //            }
-    //    }
-    //    FloorPoints.Empty();
-    //    }
-
-    //}
-
-    //}
-}
 
 TArray<FVector> ADungeonGenerator::GetRoomPointsCloseToCornersLocatoin(TArray<FVector>& RoomPoints)
 {
@@ -330,28 +170,18 @@ TArray<FVector> ADungeonGenerator::GetRoomPointsCloseToCornersLocatoin(TArray<FV
     return ResultPoints;
 }
 
-void ADungeonGenerator::AlignActorWithWorld(AActor* Actor, const TArray<FVector>& WallSpawnPoints)
+void ADungeonGenerator::AlignActorWithWorld(AActor* Actor, const FVector RoomCenter)
 {
-    if (!Actor || WallSpawnPoints.Num() == 0) {
+    if (!Actor) {
         // Ensure the actor and wall spawn points are valid
         return;
     }
 
     // Find the closest wall to the actor
     FVector ActorLocation = Actor->GetActorLocation();
-    FVector ClosestWallLocation;
-    float MinDistanceSquared = MAX_FLT;
 
-    for (const FVector& WallSpawnPoint : WallSpawnPoints) {
-        float DistanceSquared = FVector::DistSquared(ActorLocation, WallSpawnPoint);
-        if (DistanceSquared < MinDistanceSquared) {
-        MinDistanceSquared = DistanceSquared;
-        ClosestWallLocation = WallSpawnPoint;
-        }
-    }
-    
     // Make actor looking to wall
-    FVector DirectionToWall = ActorLocation - GetRoomCenter(WallSpawnPoints);
+    FVector DirectionToWall = ActorLocation - RoomCenter;
     FRotator NewRotation = DirectionToWall.Rotation();
     // Rotate actotr to 180 degree
     Actor->SetActorRotation(NewRotation - FRotator(0,180,0));
@@ -398,7 +228,7 @@ void ADungeonGenerator::AlignActorWithWorld(AActor* Actor, const TArray<FVector>
 }
 
 
-FVector ADungeonGenerator::MoveVectorByRotation(const FVector& OriginalVector, const FRotator& Rotation, float Distance)
+FVector ADungeonGenerator::MoveVectorTowardRotation(const FVector& OriginalVector, const FRotator& Rotation, float Distance)
 {
     // Convert the FRotator to a quaternion
     FQuat RotationQuat(Rotation);
@@ -471,6 +301,7 @@ FVector ADungeonGenerator::GetRoomCenter(const TArray<FVector>& RoomPoints) cons
 
     return Center;
 }
+
 
 bool ADungeonGenerator::IsPointCloseToWall(const FVector& Point, const TArray<FTileMatrix::FWallSpawnPoint>& WallSpawnPoints, bool bIsWallFacingX, FVector& OutModifiedOffset, FRotator& OutRotation, bool& bShouldPlaceObject) const
 {
@@ -555,22 +386,22 @@ AActor* ADungeonGenerator::SpawnActor(TSubclassOf<AActor> &ActorTemplate, FVecto
      return nullptr;
 }
 
-void ADungeonGenerator::SpawnDoors(TArray<FTileMatrix::FRoom>& Rooms, TArray<FVector>& CorridorTiles, TArray<FTileMatrix::FWallSpawnPoint>& CorridorWalls, TArray<FDungeonRoomTemplate*>& RoomTemplates)
+void ADungeonGenerator::SpawnDoors()
 {
-     FDungeonRoomTemplate* RoomTemplate = RoomTemplates[FMath::RandRange(0, RoomTemplates.Num() - 1)];
+     FDungeonRoomTemplate* RoomTemplate = m_RoomTemplates[FMath::RandRange(0, m_RoomTemplates.Num() - 1)];
      float DistanceTreashold = 410;
      TArray<FVector> SpawnPoints;
      TArray<FVector> NearRoomTilePoints;
      TArray<FRotator> FaceToPoint;
      // Find all corridor points that are close to our rooms fllor
-     for (const auto& room_pnts : Rooms) {
+     for (const auto& room_pnts : m_Rooms) {
         for (const auto& room_pnt : room_pnts.FloorTileWorldLocations) {
-            for (const auto& corridor_pnt : CorridorTiles) {
+            for (const auto& corridor_pnt : m_CorridorFloorTiles) {
 
                 // Spawn shold be only in narrow corridor
                 // Check near walls
                 int NeighborWalls = 0;
-                for (const auto& wall_pnt : CorridorWalls) {
+                for (const auto& wall_pnt : m_CorridorWalls) {
                     if (FVector::DistXY(corridor_pnt, wall_pnt.WorldLocation) < 410) {
                         ++NeighborWalls;
                     }
@@ -590,7 +421,69 @@ void ADungeonGenerator::SpawnDoors(TArray<FTileMatrix::FRoom>& Rooms, TArray<FVe
         float Distance = FVector::Dist(SpawnPoints[i], NearRoomTilePoints[i]);
         // Calculate the new position that is 40% of the distance towards the target
         FVector NewPosition = FMath::Lerp(SpawnPoints[i], NearRoomTilePoints[i], 0.5f);
+        m_OccupiedPoints.Add(NewPosition);
         SpawnActor(RoomTemplate->CorridorDoors, NewPosition, FaceToPoint[i] - FRotator(0, 90, 0));
+     }
+}
+
+void ADungeonGenerator::SpawnChest(const FTileMatrix::FRoom& Room, int MaxAmountToSpawn)
+{
+     int SpwannedAmount = 0;
+     float DistanceTreashold = 410;
+     TArray<FVector> SpawnPoints;
+     // Find all corridor points that are close to our rooms fllor
+     // Use free space near this room walls
+     for (const auto& wall_pnt : Room.WallSpawnPoints) {
+        if (SpwannedAmount < MaxAmountToSpawn) {
+            // Get corridor point if it close don't spawn
+            bool CanSpawnHere = true;
+            for (const auto& corridor_pnt : m_CorridorFloorTiles) {
+                if (FVector::DistXY(wall_pnt.WorldLocation, corridor_pnt) < (1000 + 10)) {
+                    CanSpawnHere = false;
+                }
+            }
+            if (CanSpawnHere) {
+                // Find nearest room flor tile to look and shift in this direction
+                float DistanceToFloorPoint = 100000.f;
+                FVector NearFloorTilePoint;
+                for (const auto& floor_pnt : Room.FloorTileWorldLocations) {
+                    if (float CalcDistance = FVector::DistXY(wall_pnt.WorldLocation, floor_pnt) < DistanceToFloorPoint) {
+                        DistanceToFloorPoint = CalcDistance;
+                        NearFloorTilePoint = floor_pnt;
+                    }
+                }
+                FVector FinalSpawnPoint = FMath::Lerp(wall_pnt.WorldLocation, NearFloorTilePoint, 0.3);
+                // Check if final spawn point is not already occupied
+                for (const auto& ocp_pnt : m_OccupiedPoints) {
+                    if (FVector::DistXY(FinalSpawnPoint, ocp_pnt) < 410) {
+                        CanSpawnHere = false;
+                    }
+                }
+                if (CanSpawnHere) {
+                    SpawnPoints.Add(FinalSpawnPoint);
+                    SpwannedAmount++;
+                }
+            }
+        }
+     }
+     // Get wall around for calculating room center
+     TArray<FVector> WallsAround;
+     for (const auto& wall_pnt : Room.WallSpawnPoints) 
+     {
+        WallsAround.Add(wall_pnt.WorldLocation);
+     }
+     FVector RoomCenter = GetRoomCenter(WallsAround);
+     // Spawn Chest
+     for (int i = 0; i < SpawnPoints.Num(); i++) {
+        // Pick random chest if more than one actor chest added
+        FDungeonRoomTemplate* RoomTemplate = m_RoomTemplates[FMath::RandRange(0, m_RoomTemplates.Num() - 1)];
+        float NowChanece = FMath::RandRange(0.f, 0.99f);
+        if (RoomTemplate->RoomChestSpawnChance > NowChanece) {
+            FRotator ThisActorRotation = (SpawnPoints[i] - RoomCenter).Rotation();
+            AActor* NewActor = SpawnActor(RoomTemplate->RoomChest, SpawnPoints[i], ThisActorRotation);
+            AlignActorWithWorld(NewActor, RoomCenter);
+            m_OccupiedPoints.Add(SpawnPoints[i]);
+        }
      }
 }
 
@@ -643,16 +536,13 @@ void ADungeonGenerator::FaceActorToPoint(AActor* Actor, FVector Point)
 
 void ADungeonGenerator::DestroyDungeonActors()
 {
-    // Erase previously spawned stuff
-    TArray<AActor*> SpawnedActors;
-    // const UWorld* World = GetWorld();
-    UGameplayStatics::GetAllActorsOfClassWithTag(this, AActor::StaticClass(), DUNGEON_MESH_TAG, SpawnedActors);
-
-    for (int32 i = SpawnedActors.Num() - 1; i >= 0; i--) {
-        if (SpawnedActors[i]) {
-            SpawnedActors[i]->Destroy();
-        }
-    }
+    // Clear Arrays before start to generate something
+    m_RoomTemplates.Empty();
+    m_Rooms.Empty();
+    m_CorridorFloorTiles.Empty();
+    m_CorridorWalls.Empty();
+    m_OccupiedPoints.Empty();
+    DestroyDungeonActors(DUNGEON_MESH_TAG);
 }
 
 
@@ -740,13 +630,11 @@ UStaticMesh* ADungeonGenerator::GetStaticMesh(AActor *Actor)
 
 void ADungeonGenerator::GenerateDungeon()
 {
-
-    TileMatrix = FTileMatrix(TileMapRows, TileMapColumns);
-    TileMatrix.MaxRandomAttemptsPerRoom = MaxRandomAttemptsPerRoom;
-    TileMatrix.SetRoomSize(MinRoomSize, MaxRoomSize);
-
     DestroyDungeonActors();
-    TileMatrix.CreateRooms(RoomsToGenerate);
+    m_TileMatrix = FTileMatrix(TileMapRows, TileMapColumns);
+    m_TileMatrix.MaxRandomAttemptsPerRoom = MaxRandomAttemptsPerRoom;
+    m_TileMatrix.SetRoomSize(MinRoomSize, MaxRoomSize);
+    m_TileMatrix.CreateRooms(RoomsToGenerate);
 
     if (DungeonTemplatesDataTable) {
         SpawnDungeonFromDataTable();
@@ -766,7 +654,7 @@ void ADungeonGenerator::GenerateDungeon()
 
         TArray<FVector> FloorTiles;
         TArray<FTileMatrix::FWallSpawnPoint> WallSpawnPoints;
-        TileMatrix.ProjectTileMapLocationsToWorld(FloorTileSize, FloorTiles, WallSpawnPoints);
+        m_TileMatrix.ProjectTileMapLocationsToWorld(FloorTileSize, FloorTiles, WallSpawnPoints);
         SpawnGenericDungeon(FloorTiles, WallSpawnPoints);
     }
 }
