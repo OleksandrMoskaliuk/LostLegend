@@ -126,10 +126,9 @@ private:
     void SpawnDungeonFromDataTable();
 
     /**
-     * Spawns dungeon objects using random room templates from a provided data table
+     * Spawns dungeon doors using random room templates from a provided data table
      */
     void SpawnDoors();
-    void SpawnChest(const FTileMatrix::FRoom& Room, int MaxAmountToSpawn);
 
     /**
      * Spawn object in room

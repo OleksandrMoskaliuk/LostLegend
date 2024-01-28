@@ -126,14 +126,34 @@ void ADungeonGenerator::SpawnDungeonFromDataTable()
     }
    
     SpawnDoors();
-    /*for (const auto& room : m_Rooms) 
+    // Randomly spawn objects in rooms
+    for (const auto& room : m_Rooms) 
     {
-        SpawnChest(room, 20);
-    }*/
+        for (const auto& pnt : room.WallSpawnPoints) 
+        {
+        int RandomActorToSpawn = FMath::RandRange(0, 2);
+        switch (RandomActorToSpawn) {
+        case 0: {
+            // Spawn cheast
+            FDungeonRoomTemplate* RoomTemplate = m_RoomTemplates[FMath::RandRange(0, m_RoomTemplates.Num() - 1)];
+            SpawnRoomObject(RoomTemplate->RoomChest, room, 10, 0.1, RoomTemplate->RoomChestSpawnChance);
+            break;
+        }
+        case 1: {
+            // Spawn object
+            break;
+        }
+        case 2: {
+            break;
+        }
+        default:
+            break;
+        }
+        }
+    }
     // Example how to spawm room object using SpawnRoomObject method
     for (const auto& room : m_Rooms) {
-        FDungeonRoomTemplate* RoomTemplate = m_RoomTemplates[FMath::RandRange(0, m_RoomTemplates.Num() - 1)];
-        SpawnRoomObject(RoomTemplate->RoomChest, room, 10, 0.1, RoomTemplate->RoomChestSpawnChance);
+       
     }
     for (const auto& room : m_Rooms) {
         FDungeonRoomTemplate* RoomTemplate = m_RoomTemplates[FMath::RandRange(0, m_RoomTemplates.Num() - 1)];
@@ -419,7 +439,6 @@ bool ADungeonGenerator::IsPointInCorridor(const FVector& Point, const TArray<FTi
     return false; // Point is not in the corridor
 }
 
-
 void ADungeonGenerator::SpawnRoomObject(TSubclassOf<AActor>& ObjectToSpawn, const FTileMatrix::FRoom& Room, int MaxAmountToSpawn, float Distance, float ChanceToSpawn)
 {
     float NotSpawnNearCorridorDistance = 600;
@@ -551,70 +570,6 @@ void ADungeonGenerator::SpawnDoors()
      }
 }
 
-void ADungeonGenerator::SpawnChest(const FTileMatrix::FRoom& Room, int MaxAmountToSpawn)
-{
-     float NotSpawnNearCorridorDistance = 600;
-     int SpwannedAmount = 0;
-     float DistanceTreashold = 410;
-     // How far move object while spawn [Near wall - 0.01 to ... 0.5 - Room center]
-     float MoveSpawnObject = 0.1;
-     TArray<FVector> SpawnPoints;
-     // Find all corridor points that are close to our rooms fllor
-     // Use free space near this room walls
-     for (const auto& wall_pnt : Room.WallSpawnPoints) {
-        if (SpwannedAmount < MaxAmountToSpawn) {
-            // Get corridor point if it close don't spawn
-            bool CanSpawnHere = true;
-            for (const auto& corridor_pnt : m_CorridorFloorTiles) {
-                if (FVector::DistXY(wall_pnt.WorldLocation, corridor_pnt) < NotSpawnNearCorridorDistance) {
-                    CanSpawnHere = false;
-                }
-            }
-            FVector SpawnPoint = wall_pnt.WorldLocation;
-            if (CanSpawnHere) {
-               SpawnPoints.Add(SpawnPoint);
-               SpwannedAmount++;
-            }
-        }
-     }
-
-     // Get wall around for calculating room center
-     TArray<FVector> WallsAround;
-     for (const auto& wall_pnt : Room.WallSpawnPoints) 
-     {
-        WallsAround.Add(wall_pnt.WorldLocation);
-     }
-
-      // How far we can move object threashold
-     float RoomSizeX = 0;
-     float RoomSizeY = 0;
-     RoomSize(WallsAround, RoomSizeX, RoomSizeY);
-     float RoomSizeMin = FMath::Min(RoomSizeX, RoomSizeY);
-     FVector RoomCenter = GetRoomCenter(WallsAround);
-
-     // Spawn Chest
-     for (int i = 0; i < SpawnPoints.Num(); i++) {
-        // Pick random chest if more than one actor chest added
-        FDungeonRoomTemplate* RoomTemplate = m_RoomTemplates[FMath::RandRange(0, m_RoomTemplates.Num() - 1)];
-        float NowChanece = FMath::RandRange(0.f, 0.99f);
-        if (RoomTemplate->RoomChestSpawnChance > NowChanece) {
-            FRotator AlignedRotation  = AlignActorWithWorld(SpawnPoints[i], RoomCenter);
-            FVector SpawnLocation = SpawnPoints[i] + AlignedRotation.Vector() * (RoomSizeMin * MoveSpawnObject);
-            // Check if this place is occupied or not before final spawn
-            float IsOccupied = false;
-            for (const auto& pnt : m_OccupiedPoints) {
-                if (FVector::DistXY(pnt, SpawnLocation) < 410.f) {
-                    IsOccupied = true;
-                }
-            }
-            if (!IsOccupied) 
-            {
-            SpawnActor(RoomTemplate->RoomChest, SpawnLocation, AlignedRotation);
-            m_OccupiedPoints.Add(SpawnPoints[i]);
-            }
-        }
-     }
-}
 
 // Find room size. Useful for pushing items to center treashold. This help to find max distance to push.
 void ADungeonGenerator::RoomSize(TArray<FVector>& ArrayOfRoomPoints, float& XLength, float& YLength)
