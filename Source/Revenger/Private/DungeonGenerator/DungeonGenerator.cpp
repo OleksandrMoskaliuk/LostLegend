@@ -127,45 +127,18 @@ void ADungeonGenerator::SpawnDungeonFromDataTable()
    
     SpawnDoors();
     // Randomly spawn objects in rooms
-    for (const auto& room : m_Rooms) 
-    {
-        for (const auto& pnt : room.WallSpawnPoints) 
+    for (int i = 0; i < m_Rooms.Num(); ++i) 
+    {   // Do not spawn object in start rooom
+        if (i != 0) 
         {
-        int RandomActorToSpawn = FMath::RandRange(0, 2);
-        switch (RandomActorToSpawn) {
-        case 0: {
-            // Spawn cheast
-            FDungeonRoomTemplate* RoomTemplate = m_RoomTemplates[FMath::RandRange(0, m_RoomTemplates.Num() - 1)];
-            SpawnRoomObject(RoomTemplate->RoomChest, room, 10, 0.1, RoomTemplate->RoomChestSpawnChance);
-            break;
-        }
-        case 1: {
-            // Spawn object
-            break;
-        }
-        case 2: {
-            break;
-        }
-        default:
-            break;
-        }
-        }
-    }
-    // Example how to spawm room object using SpawnRoomObject method
-    for (const auto& room : m_Rooms) {
-       
-    }
-    for (const auto& room : m_Rooms) {
+        // Spawn chest.
+        // Priority 0
         FDungeonRoomTemplate* RoomTemplate = m_RoomTemplates[FMath::RandRange(0, m_RoomTemplates.Num() - 1)];
-        SpawnRoomObject(RoomTemplate->RoomChest, room, 10, 0.2, RoomTemplate->RoomChestSpawnChance);
-    }
-    for (const auto& room : m_Rooms) {
-        FDungeonRoomTemplate* RoomTemplate = m_RoomTemplates[FMath::RandRange(0, m_RoomTemplates.Num() - 1)];
-        SpawnRoomObject(RoomTemplate->RoomChest, room, 10, 0.3, RoomTemplate->RoomChestSpawnChance);
-    }
-    for (const auto& room : m_Rooms) {
-        FDungeonRoomTemplate* RoomTemplate = m_RoomTemplates[FMath::RandRange(0, m_RoomTemplates.Num() - 1)];
-        SpawnRoomObject(RoomTemplate->RoomChest, room, 10, 0.4, RoomTemplate->RoomChestSpawnChance);
+        SpawnRoomObject(RoomTemplate->RoomChest, m_Rooms[i], 1, 0.1, RoomTemplate->RoomChestSpawnChance);
+        // Spawn another object
+        // Priority 1
+        // Make actor
+        }
     }
 }
 
@@ -463,14 +436,14 @@ void ADungeonGenerator::SpawnRoomObject(TSubclassOf<AActor>& ObjectToSpawn, cons
 
     // Find all corridor points that are close to our rooms fllor
     // Use free space near this room walls
-    for (const auto& wall_pnt : Room.WallSpawnPoints) {
+    for (const auto& wall_pnt : WallsAround) {
         if (SpwannedAmount < MaxAmountToSpawn) {
-            FRotator AlignedRotation = AlignActorWithWorld(wall_pnt.WorldLocation, RoomCenter);
-            FVector SpawnLocation = (wall_pnt.WorldLocation + AlignedRotation.Vector() * (RoomSizeMin * MoveSpawnObject));
+            FRotator AlignedRotation = AlignActorWithWorld(wall_pnt, RoomCenter);
+            FVector SpawnLocation = (wall_pnt + AlignedRotation.Vector() * (RoomSizeMin * MoveSpawnObject));
             // Get corridor point if it close don't spawn
             bool CanSpawnHere = true;
             for (const auto& corridor_pnt : m_CorridorFloorTiles) {
-                if (FVector::DistXY(wall_pnt.WorldLocation, corridor_pnt) < NotSpawnNearCorridorDistance) {
+                if (FVector::DistXY(wall_pnt, corridor_pnt) < NotSpawnNearCorridorDistance) {
                     CanSpawnHere = false;
                 }
             }
